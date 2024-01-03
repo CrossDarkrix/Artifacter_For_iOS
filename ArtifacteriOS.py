@@ -1,0 +1,2788 @@
+import ctypes
+from ctypes import Structure, sizeof, byref, cdll, pydll, c_void_p, c_char, c_byte, c_char_p, c_double, c_float, c_int, c_longlong, c_short, c_bool, c_long, c_int32, c_ubyte, c_uint, c_ushort, c_ulong, c_ulonglong, POINTER, pointer
+import re
+import sys
+import weakref
+import string
+import pyparsing as pp
+import inspect
+import functools
+import contextlib
+import base64
+import concurrent.futures
+import itertools
+import json
+import os
+import ssl
+import urllib.request
+import urllib.parse
+from collections import Counter
+from decimal import Decimal, ROUND_HALF_UP
+from io import BytesIO
+from PIL import Image, ImageFont, ImageDraw, ImageEnhance
+from PIL import ImageFile
+from ArtifacterResource_Font import ArtifactFont
+from ArtifacterResource_Image import artifact_assets, artifact_base_image, artifact_emotes, artifact_rarelity, artifact_constellation, artifact_grades
+ssl._create_default_https_context = ssl._create_unverified_context
+
+CheckHP = ['0']
+CheckATK = ['0']
+CheckDEF = ['0']
+CheckChage = ['0']
+CheckElement = ['0']
+SelectedRow = [0]
+AvatarList = ['']
+ImageFile.LOAD_TRUNCATED_IMAGES = True
+
+UsrAgn = 'Mozilla/5.0 (Linux; U; Android 8.0; en-la; Nexus Build/JPG991) AppleWebKit/511.2 (KHTML, like Gecko) Version/5.0 Mobile/11S444 YJApp-ANDROID jp.co.yahoo.android.yjtop/4.01.1.5'
+ArtifactUISheet = base64.b64decode('WwogIHsKICAgICJub2RlcyIgOiBbCiAgICAgIHsKICAgICAgICAibm9kZXMiIDogWwoKICAgICAgICBdLAogICAgICAgICJmcmFtZSIgOiAie3s2LCA2fSwgezEwMCwgMTAwfX0iLAogICAgICAgICJjbGFzcyIgOiAiSW1hZ2VWaWV3IiwKICAgICAgICAiYXR0cmlidXRlcyIgOiB7CiAgICAgICAgICAiZnJhbWUiIDogInt7MTI2LCAyNjB9LCB7MTAwLCAxMDB9fSIsCiAgICAgICAgICAiY2xhc3MiIDogIkltYWdlVmlldyIsCiAgICAgICAgICAibmFtZSIgOiAiSWNvblZpZXciLAogICAgICAgICAgInV1aWQiIDogIjFBRjI3MzQ0LUZENjQtNEQ2QS1CQTk3LUY2QjY4QTlDMEVDOSIKICAgICAgICB9LAogICAgICAgICJzZWxlY3RlZCIgOiBmYWxzZQogICAgICB9LAogICAgICB7CiAgICAgICAgIm5vZGVzIiA6IFsKCiAgICAgICAgXSwKICAgICAgICAiZnJhbWUiIDogInt7NiwgMTE3LjY2NjY2NjY2NjY2NjY2fSwgezc3LCAzMn19IiwKICAgICAgICAiY2xhc3MiIDogIkxhYmVsIiwKICAgICAgICAiYXR0cmlidXRlcyIgOiB7CiAgICAgICAgICAiZmxleCIgOiAiTFJUQiIsCiAgICAgICAgICAibmFtZSIgOiAiIiwKICAgICAgICAgICJ0ZXh0X2NvbG9yIiA6ICJSR0JBKDEuMDAwMDAwLDEuMDAwMDAwLDEuMDAwMDAwLDEuMDAwMDAwKSIsCiAgICAgICAgICAiZnJhbWUiIDogInt7MTAxLCAyOTR9LCB7MTUwLCAzMn19IiwKICAgICAgICAgICJ0aW50X2NvbG9yIiA6ICJSR0JBKDEuMDAwMDAwLDEuMDAwMDAwLDEuMDAwMDAwLDEuMDAwMDAwKSIsCiAgICAgICAgICAidXVpZCIgOiAiQkU0MUNCRjMtMjFBMC00N0FELUIyQTUtRjgzRTgxRkRDMEIxIiwKICAgICAgICAgICJjbGFzcyIgOiAiTGFiZWwiLAogICAgICAgICAgImFsaWdubWVudCIgOiAibGVmdCIsCiAgICAgICAgICAidGV4dCIgOiAiVUlEOiIsCiAgICAgICAgICAiZm9udF9zaXplIiA6IDMwLAogICAgICAgICAgImZvbnRfbmFtZSIgOiAiPFN5c3RlbT4iCiAgICAgICAgfSwKICAgICAgICAic2VsZWN0ZWQiIDogZmFsc2UKICAgICAgfSwKICAgICAgewogICAgICAgICJub2RlcyIgOiBbCgogICAgICAgIF0sCiAgICAgICAgImZyYW1lIiA6ICJ7ezYwLCAxMTcuNjY2NjY2NjY2NjY2NjZ9LCB7Mjg2LCAzMn19IiwKICAgICAgICAiY2xhc3MiIDogIlRleHRGaWVsZCIsCiAgICAgICAgImF0dHJpYnV0ZXMiIDogewogICAgICAgICAgInV1aWQiIDogIjI0ODYxNTM0LUNBNjctNEMwQy1BQzYzLTFDMkQ5Qjk1QkNCRiIsCiAgICAgICAgICAiZm9udF9zaXplIiA6IDE3LAogICAgICAgICAgImJhY2tncm91bmRfY29sb3IiIDogIlJHQkEoMS4wMDAwMDAsMS4wMDAwMDAsMS4wMDAwMDAsMS4wMDAwMDApIiwKICAgICAgICAgICJmcmFtZSIgOiAie3s3NiwgMjk0fSwgezIwMCwgMzJ9fSIsCiAgICAgICAgICAiYWxpZ25tZW50IiA6ICJsZWZ0IiwKICAgICAgICAgICJhdXRvY29ycmVjdGlvbl90eXBlIiA6ICJkZWZhdWx0IiwKICAgICAgICAgICJhY3Rpb24iIDogIm1haW4iLAogICAgICAgICAgInRleHRfY29sb3IiIDogIlJHQkEoMC4xMDE5NjEsMC4xMDE5NjEsMC4xMDE5NjEsMS4wMDAwMDApIiwKICAgICAgICAgICJmb250X25hbWUiIDogIjxTeXN0ZW0+IiwKICAgICAgICAgICJzcGVsbGNoZWNraW5nX3R5cGUiIDogImRlZmF1bHQiLAogICAgICAgICAgImNsYXNzIiA6ICJUZXh0RmllbGQiLAogICAgICAgICAgIm5hbWUiIDogIlVJRCIsCiAgICAgICAgICAiZmxleCIgOiAiTFJUQiIKICAgICAgICB9LAogICAgICAgICJzZWxlY3RlZCIgOiBmYWxzZQogICAgICB9LAogICAgICB7CiAgICAgICAgIm5vZGVzIiA6IFsKCiAgICAgICAgXSwKICAgICAgICAiZnJhbWUiIDogInt7NiwgMTU4LjY2NjY2NjY2NjY2NjY2fSwgezIwMywgMzJ9fSIsCiAgICAgICAgImNsYXNzIiA6ICJMYWJlbCIsCiAgICAgICAgImF0dHJpYnV0ZXMiIDogewogICAgICAgICAgImZsZXgiIDogIkxSVEIiLAogICAgICAgICAgIm5hbWUiIDogIlVzZXJOYW1lIiwKICAgICAgICAgICJ0ZXh0X2NvbG9yIiA6ICJSR0JBKDEuMDAwMDAwLDEuMDAwMDAwLDEuMDAwMDAwLDEuMDAwMDAwKSIsCiAgICAgICAgICAiZnJhbWUiIDogInt7MTAxLCAyOTR9LCB7MTUwLCAzMn19IiwKICAgICAgICAgICJ1dWlkIiA6ICIzRUNBQTQ1QS01RjUxLTRGOTMtOEJGNy1BMTRCRUM1NUJFODgiLAogICAgICAgICAgImNsYXNzIiA6ICJMYWJlbCIsCiAgICAgICAgICAiYWxpZ25tZW50IiA6ICJsZWZ0IiwKICAgICAgICAgICJ0ZXh0IiA6ICIiLAogICAgICAgICAgImZvbnRfc2l6ZSIgOiAxOCwKICAgICAgICAgICJmb250X25hbWUiIDogIjxTeXN0ZW0+IgogICAgICAgIH0sCiAgICAgICAgInNlbGVjdGVkIiA6IGZhbHNlCiAgICAgIH0sCiAgICAgIHsKICAgICAgICAibm9kZXMiIDogWwoKICAgICAgICBdLAogICAgICAgICJmcmFtZSIgOiAie3syMTEsIDE1OC42NjY2NjY2NjY2NjY2Nn0sIHsxMzUsIDMyfX0iLAogICAgICAgICJjbGFzcyIgOiAiTGFiZWwiLAogICAgICAgICJhdHRyaWJ1dGVzIiA6IHsKICAgICAgICAgICJmbGV4IiA6ICJMUlRCIiwKICAgICAgICAgICJuYW1lIiA6ICJXb3JsZExhbmsiLAogICAgICAgICAgInRleHRfY29sb3IiIDogIlJHQkEoMS4wMDAwMDAsMS4wMDAwMDAsMS4wMDAwMDAsMS4wMDAwMDApIiwKICAgICAgICAgICJmcmFtZSIgOiAie3sxMDEsIDI5NH0sIHsxNTAsIDMyfX0iLAogICAgICAgICAgInV1aWQiIDogIjhDNTk2MThBLUY4NDAtNEU5Qy1CNjBCLTQyNDYxREI1RTA4QyIsCiAgICAgICAgICAiY2xhc3MiIDogIkxhYmVsIiwKICAgICAgICAgICJhbGlnbm1lbnQiIDogImxlZnQiLAogICAgICAgICAgInRleHQiIDogIiIsCiAgICAgICAgICAiZm9udF9zaXplIiA6IDE4LAogICAgICAgICAgImZvbnRfbmFtZSIgOiAiPFN5c3RlbT4iCiAgICAgICAgfSwKICAgICAgICAic2VsZWN0ZWQiIDogZmFsc2UKICAgICAgfSwKICAgICAgewogICAgICAgICJub2RlcyIgOiBbCgogICAgICAgIF0sCiAgICAgICAgImZyYW1lIiA6ICJ7ezksIDE5NH0sIHszMzcsIDE2N319IiwKICAgICAgICAiY2xhc3MiIDogIlRhYmxlVmlldyIsCiAgICAgICAgImF0dHJpYnV0ZXMiIDogewogICAgICAgICAgInV1aWQiIDogIjdFQjQwRDcxLTQyNTMtNDc3Qi04QjY0LTVCNEM3QjkwQUE4OCIsCiAgICAgICAgICAiZGF0YV9zb3VyY2VfYWN0aW9uIiA6ICJTZWxlY3RSb3ciLAogICAgICAgICAgImJhY2tncm91bmRfY29sb3IiIDogIlJHQkEoMC4xMDUyMDEsMC4xMDUyMDEsMC4xMDUyMDEsMS4wMDAwMDApIiwKICAgICAgICAgICJmcmFtZSIgOiAie3s3NiwgMjEwfSwgezIwMCwgMjAwfX0iLAogICAgICAgICAgImRhdGFfc291cmNlX2l0ZW1zIiA6ICIiLAogICAgICAgICAgInRpbnRfY29sb3IiIDogIlJHQkEoMS4wMDAwMDAsMS4wMDAwMDAsMS4wMDAwMDAsMS4wMDAwMDApIiwKICAgICAgICAgICJkYXRhX3NvdXJjZV9udW1iZXJfb2ZfbGluZXMiIDogMSwKICAgICAgICAgICJib3JkZXJfY29sb3IiIDogIlJHQkEoMC4xMzEyMDYsMC4xMzEyMDYsMC4xMzEyMDYsMS4wMDAwMDApIiwKICAgICAgICAgICJkYXRhX3NvdXJjZV9kZWxldGVfZW5hYmxlZCIgOiBmYWxzZSwKICAgICAgICAgICJkYXRhX3NvdXJjZV9mb250X3NpemUiIDogMTgsCiAgICAgICAgICAicm93X2hlaWdodCIgOiA0NCwKICAgICAgICAgICJjbGFzcyIgOiAiVGFibGVWaWV3IiwKICAgICAgICAgICJuYW1lIiA6ICJjaGFyYWN0ZXJMaXN0IiwKICAgICAgICAgICJmbGV4IiA6ICJMUlRCIgogICAgICAgIH0sCiAgICAgICAgInNlbGVjdGVkIiA6IGZhbHNlCiAgICAgIH0sCiAgICAgIHsKICAgICAgICAibm9kZXMiIDogWwoKICAgICAgICBdLAogICAgICAgICJmcmFtZSIgOiAie3sxMDEsIDQwOX0sIHs1MSwgMzF9fSIsCiAgICAgICAgImNsYXNzIiA6ICJTd2l0Y2giLAogICAgICAgICJhdHRyaWJ1dGVzIiA6IHsKICAgICAgICAgICJmbGV4IiA6ICJMUlRCIiwKICAgICAgICAgICJhY3Rpb24iIDogIlN3aXRjaFNlbGVjdGVyIiwKICAgICAgICAgICJmcmFtZSIgOiAie3sxNTEsIDI5NH0sIHs1MSwgMzF9fSIsCiAgICAgICAgICAidGludF9jb2xvciIgOiAiUkdCQSgwLjA5MDkwOSwxLjAwMDAwMCwwLjAwMDAwMCwxLjAwMDAwMCkiLAogICAgICAgICAgImNsYXNzIiA6ICJTd2l0Y2giLAogICAgICAgICAgInV1aWQiIDogIkQ5MTAxREYyLUU2MEItNERBNi05NDE3LTcxRTMzQ0IzQ0E4NSIsCiAgICAgICAgICAidmFsdWUiIDogZmFsc2UsCiAgICAgICAgICAiYmFja2dyb3VuZF9jb2xvciIgOiAiUkdCQSgwLjI0MTEzNSwwLjI0MTEzNSwwLjI0MTEzNSwxLjAwMDAwMCkiLAogICAgICAgICAgIm5hbWUiIDogIkhQIgogICAgICAgIH0sCiAgICAgICAgInNlbGVjdGVkIiA6IGZhbHNlCiAgICAgIH0sCiAgICAgIHsKICAgICAgICAibm9kZXMiIDogWwoKICAgICAgICBdLAogICAgICAgICJmcmFtZSIgOiAie3s5LCA0MDl9LCB7OTEsIDMxfX0iLAogICAgICAgICJjbGFzcyIgOiAiTGFiZWwiLAogICAgICAgICJhdHRyaWJ1dGVzIiA6IHsKICAgICAgICAgICJmbGV4IiA6ICJMUlRCIiwKICAgICAgICAgICJuYW1lIiA6ICIiLAogICAgICAgICAgInRleHRfY29sb3IiIDogIlJHQkEoMS4wMDAwMDAsMS4wMDAwMDAsMS4wMDAwMDAsMS4wMDAwMDApIiwKICAgICAgICAgICJmcmFtZSIgOiAie3sxMDEsIDI5NH0sIHsxNTAsIDMyfX0iLAogICAgICAgICAgInV1aWQiIDogIjBENzk5QTRELUIzOUItNDRFOS04NDdDLUExQkU0OTUyM0ZFRCIsCiAgICAgICAgICAiY2xhc3MiIDogIkxhYmVsIiwKICAgICAgICAgICJhbGlnbm1lbnQiIDogImNlbnRlciIsCiAgICAgICAgICAidGV4dCIgOiAiSFDmj5vnrpciLAogICAgICAgICAgImJhY2tncm91bmRfY29sb3IiIDogIlJHQkEoMC4yNDExMzUsMC4yNDExMzUsMC4yNDExMzUsMS4wMDAwMDApIiwKICAgICAgICAgICJmb250X3NpemUiIDogMTgsCiAgICAgICAgICAiZm9udF9uYW1lIiA6ICI8U3lzdGVtPiIKICAgICAgICB9LAogICAgICAgICJzZWxlY3RlZCIgOiBmYWxzZQogICAgICB9LAogICAgICB7CiAgICAgICAgIm5vZGVzIiA6IFsKCiAgICAgICAgXSwKICAgICAgICAiZnJhbWUiIDogInt7MTcsIDM2OX0sIHsxNTAsIDMyfX0iLAogICAgICAgICJjbGFzcyIgOiAiTGFiZWwiLAogICAgICAgICJhdHRyaWJ1dGVzIiA6IHsKICAgICAgICAgICJmbGV4IiA6ICJMUlRCIiwKICAgICAgICAgICJuYW1lIiA6ICIiLAogICAgICAgICAgInRleHRfY29sb3IiIDogIlJHQkEoMS4wMDAwMDAsMS4wMDAwMDAsMS4wMDAwMDAsMS4wMDAwMDApIiwKICAgICAgICAgICJmcmFtZSIgOiAie3sxMDEsIDMwM30sIHsxNTAsIDMyfX0iLAogICAgICAgICAgInV1aWQiIDogIkE3NUJGRjUyLTk4QjktNDQ2NC1CMjg2LTgwNUVENzkyNkE4NyIsCiAgICAgICAgICAiY2xhc3MiIDogIkxhYmVsIiwKICAgICAgICAgICJhbGlnbm1lbnQiIDogImNlbnRlciIsCiAgICAgICAgICAidGV4dCIgOiAi6KiI566X5pa55byPIiwKICAgICAgICAgICJiYWNrZ3JvdW5kX2NvbG9yIiA6ICJSR0JBKDAuMjQxMTM1LDAuMjQxMTM1LDAuMjQxMTM1LDEuMDAwMDAwKSIsCiAgICAgICAgICAiZm9udF9zaXplIiA6IDE4LAogICAgICAgICAgImZvbnRfbmFtZSIgOiAiPFN5c3RlbT4iCiAgICAgICAgfSwKICAgICAgICAic2VsZWN0ZWQiIDogZmFsc2UKICAgICAgfSwKICAgICAgewogICAgICAgICJub2RlcyIgOiBbCgogICAgICAgIF0sCiAgICAgICAgImZyYW1lIiA6ICJ7ezksIDQ0OH0sIHs5MSwgMzF9fSIsCiAgICAgICAgImNsYXNzIiA6ICJMYWJlbCIsCiAgICAgICAgImF0dHJpYnV0ZXMiIDogewogICAgICAgICAgImZsZXgiIDogIkxSVEIiLAogICAgICAgICAgIm5hbWUiIDogIiIsCiAgICAgICAgICAidGV4dF9jb2xvciIgOiAiUkdCQSgxLjAwMDAwMCwxLjAwMDAwMCwxLjAwMDAwMCwxLjAwMDAwMCkiLAogICAgICAgICAgImZyYW1lIiA6ICJ7ezEwMSwgMzAzfSwgezE1MCwgMzJ9fSIsCiAgICAgICAgICAidXVpZCIgOiAiNzM3NDdCOUItNkYxOS00RENGLTlERTgtMjJERTI1MTU3MzJGIiwKICAgICAgICAgICJjbGFzcyIgOiAiTGFiZWwiLAogICAgICAgICAgImFsaWdubWVudCIgOiAiY2VudGVyIiwKICAgICAgICAgICJ0ZXh0IiA6ICLmlLvmkoPlipvmj5vnrpciLAogICAgICAgICAgImJhY2tncm91bmRfY29sb3IiIDogIlJHQkEoMC4yNDExMzUsMC4yNDExMzUsMC4yNDExMzUsMS4wMDAwMDApIiwKICAgICAgICAgICJmb250X3NpemUiIDogMTgsCiAgICAgICAgICAiZm9udF9uYW1lIiA6ICI8U3lzdGVtPiIKICAgICAgICB9LAogICAgICAgICJzZWxlY3RlZCIgOiBmYWxzZQogICAgICB9LAogICAgICB7CiAgICAgICAgIm5vZGVzIiA6IFsKCiAgICAgICAgXSwKICAgICAgICAiZnJhbWUiIDogInt7MTAxLCA0NDh9LCB7NTEsIDMxfX0iLAogICAgICAgICJjbGFzcyIgOiAiU3dpdGNoIiwKICAgICAgICAiYXR0cmlidXRlcyIgOiB7CiAgICAgICAgICAiZmxleCIgOiAiTFJUQiIsCiAgICAgICAgICAiYWN0aW9uIiA6ICJTd2l0Y2hTZWxlY3RlciIsCiAgICAgICAgICAiZnJhbWUiIDogInt7MTUxLCAzMDR9LCB7NTEsIDMxfX0iLAogICAgICAgICAgInRpbnRfY29sb3IiIDogIlJHQkEoMC4wOTA5MDksMS4wMDAwMDAsMC4wMDAwMDAsMS4wMDAwMDApIiwKICAgICAgICAgICJjbGFzcyIgOiAiU3dpdGNoIiwKICAgICAgICAgICJiYWNrZ3JvdW5kX2NvbG9yIiA6ICJSR0JBKDAuMjM5OTUzLDAuMjM5OTUzLDAuMjM5OTUzLDEuMDAwMDAwKSIsCiAgICAgICAgICAidmFsdWUiIDogZmFsc2UsCiAgICAgICAgICAidXVpZCIgOiAiOTFDMDVENkEtM0VGOC00MTA4LTkzRUMtMUIzNjk2QkE5RjBGIiwKICAgICAgICAgICJuYW1lIiA6ICJBVEsiCiAgICAgICAgfSwKICAgICAgICAic2VsZWN0ZWQiIDogZmFsc2UKICAgICAgfSwKICAgICAgewogICAgICAgICJub2RlcyIgOiBbCgogICAgICAgIF0sCiAgICAgICAgImZyYW1lIiA6ICJ7ezksIDQ4N30sIHs5MSwgMzF9fSIsCiAgICAgICAgImNsYXNzIiA6ICJMYWJlbCIsCiAgICAgICAgImF0dHJpYnV0ZXMiIDogewogICAgICAgICAgImZsZXgiIDogIkxSVEIiLAogICAgICAgICAgIm5hbWUiIDogIiIsCiAgICAgICAgICAidGV4dF9jb2xvciIgOiAiUkdCQSgxLjAwMDAwMCwxLjAwMDAwMCwxLjAwMDAwMCwxLjAwMDAwMCkiLAogICAgICAgICAgImZyYW1lIiA6ICJ7ezEwMSwgMzAzfSwgezE1MCwgMzJ9fSIsCiAgICAgICAgICAidXVpZCIgOiAiQ0I2N0Q3MzUtMkU0OC00OTQ4LTg0QzQtNkVBMTFERDdFN0QwIiwKICAgICAgICAgICJjbGFzcyIgOiAiTGFiZWwiLAogICAgICAgICAgImFsaWdubWVudCIgOiAiY2VudGVyIiwKICAgICAgICAgICJ0ZXh0IiA6ICLpmLLlvqHlipvmj5vnrpciLAogICAgICAgICAgImJhY2tncm91bmRfY29sb3IiIDogIlJHQkEoMC4yNDIzMTcsMC4yNDIzMTcsMC4yNDIzMTcsMS4wMDAwMDApIiwKICAgICAgICAgICJmb250X3NpemUiIDogMTgsCiAgICAgICAgICAiZm9udF9uYW1lIiA6ICI8U3lzdGVtPiIKICAgICAgICB9LAogICAgICAgICJzZWxlY3RlZCIgOiBmYWxzZQogICAgICB9LAogICAgICB7CiAgICAgICAgIm5vZGVzIiA6IFsKCiAgICAgICAgXSwKICAgICAgICAiZnJhbWUiIDogInt7MTAxLCA0ODd9LCB7NTEsIDMxfX0iLAogICAgICAgICJjbGFzcyIgOiAiU3dpdGNoIiwKICAgICAgICAiYXR0cmlidXRlcyIgOiB7CiAgICAgICAgICAiZmxleCIgOiAiTFJUQiIsCiAgICAgICAgICAiYWN0aW9uIiA6ICJTd2l0Y2hTZWxlY3RlciIsCiAgICAgICAgICAiZnJhbWUiIDogInt7MTUxLCAzMDR9LCB7NTEsIDMxfX0iLAogICAgICAgICAgInRpbnRfY29sb3IiIDogIlJHQkEoMC4wOTA5MDksMS4wMDAwMDAsMC4wMDAwMDAsMS4wMDAwMDApIiwKICAgICAgICAgICJjbGFzcyIgOiAiU3dpdGNoIiwKICAgICAgICAgICJiYWNrZ3JvdW5kX2NvbG9yIiA6ICJSR0JBKDAuMjQyMzE3LDAuMjQyMzE3LDAuMjQyMzE3LDEuMDAwMDAwKSIsCiAgICAgICAgICAidmFsdWUiIDogZmFsc2UsCiAgICAgICAgICAidXVpZCIgOiAiQzVBMEU1RjEtMzU5OS00QTI2LUE0MUEtMTUxNTdDRkMyNEY5IiwKICAgICAgICAgICJuYW1lIiA6ICJERUYiCiAgICAgICAgfSwKICAgICAgICAic2VsZWN0ZWQiIDogZmFsc2UKICAgICAgfSwKICAgICAgewogICAgICAgICJub2RlcyIgOiBbCgogICAgICAgIF0sCiAgICAgICAgImZyYW1lIiA6ICJ7ezE1MSwgNDA5fSwgezEwMywgMzJ9fSIsCiAgICAgICAgImNsYXNzIiA6ICJMYWJlbCIsCiAgICAgICAgImF0dHJpYnV0ZXMiIDogewogICAgICAgICAgImZsZXgiIDogIkxSVEIiLAogICAgICAgICAgIm5hbWUiIDogIiIsCiAgICAgICAgICAidGV4dF9jb2xvciIgOiAiUkdCQSgxLjAwMDAwMCwxLjAwMDAwMCwxLjAwMDAwMCwxLjAwMDAwMCkiLAogICAgICAgICAgImZyYW1lIiA6ICJ7ezEwMSwgMzAzfSwgezE1MCwgMzJ9fSIsCiAgICAgICAgICAidXVpZCIgOiAiNzFDQjRCQUEtMzM5NS00QkI5LTlDMDctNjQ0RTZDNDM5NEJGIiwKICAgICAgICAgICJjbGFzcyIgOiAiTGFiZWwiLAogICAgICAgICAgImFsaWdubWVudCIgOiAiY2VudGVyIiwKICAgICAgICAgICJ0ZXh0IiA6ICLjg4Hjg6Pjg7zjgrfjgpnmj5vnrpciLAogICAgICAgICAgImJhY2tncm91bmRfY29sb3IiIDogIlJHQkEoMC4yNDExMzUsMC4yNDExMzUsMC4yNDExMzUsMS4wMDAwMDApIiwKICAgICAgICAgICJmb250X3NpemUiIDogMTgsCiAgICAgICAgICAiZm9udF9uYW1lIiA6ICI8U3lzdGVtPiIKICAgICAgICB9LAogICAgICAgICJzZWxlY3RlZCIgOiBmYWxzZQogICAgICB9LAogICAgICB7CiAgICAgICAgIm5vZGVzIiA6IFsKCiAgICAgICAgXSwKICAgICAgICAiZnJhbWUiIDogInt7MTUyLCA0NDh9LCB7MTAyLCAzMX19IiwKICAgICAgICAiY2xhc3MiIDogIkxhYmVsIiwKICAgICAgICAiYXR0cmlidXRlcyIgOiB7CiAgICAgICAgICAiZmxleCIgOiAiTFJUQiIsCiAgICAgICAgICAibmFtZSIgOiAiIiwKICAgICAgICAgICJ0ZXh0X2NvbG9yIiA6ICJSR0JBKDEuMDAwMDAwLDEuMDAwMDAwLDEuMDAwMDAwLDEuMDAwMDAwKSIsCiAgICAgICAgICAiZnJhbWUiIDogInt7MTAxLCAzMDN9LCB7MTUwLCAzMn19IiwKICAgICAgICAgICJ1dWlkIiA6ICIyMDk5Mjg0Ri01RTVGLTRCOUMtQTk5Ni0yRjNEODNEN0I5QkMiLAogICAgICAgICAgImNsYXNzIiA6ICJMYWJlbCIsCiAgICAgICAgICAiYWxpZ25tZW50IiA6ICJjZW50ZXIiLAogICAgICAgICAgInRleHQiIDogIueGn+efpeaPm+eulyIsCiAgICAgICAgICAiYmFja2dyb3VuZF9jb2xvciIgOiAiUkdCQSgwLjI0MTEzNSwwLjI0MTEzNSwwLjI0MTEzNSwxLjAwMDAwMCkiLAogICAgICAgICAgImZvbnRfc2l6ZSIgOiAxOCwKICAgICAgICAgICJmb250X25hbWUiIDogIjxTeXN0ZW0+IgogICAgICAgIH0sCiAgICAgICAgInNlbGVjdGVkIiA6IGZhbHNlCiAgICAgIH0sCiAgICAgIHsKICAgICAgICAibm9kZXMiIDogWwoKICAgICAgICBdLAogICAgICAgICJmcmFtZSIgOiAie3syNTgsIDQwOX0sIHs1MSwgMzF9fSIsCiAgICAgICAgImNsYXNzIiA6ICJTd2l0Y2giLAogICAgICAgICJhdHRyaWJ1dGVzIiA6IHsKICAgICAgICAgICJmbGV4IiA6ICJMUlRCIiwKICAgICAgICAgICJhY3Rpb24iIDogIlN3aXRjaFNlbGVjdGVyIiwKICAgICAgICAgICJmcmFtZSIgOiAie3sxNTEsIDMwNH0sIHs1MSwgMzF9fSIsCiAgICAgICAgICAidGludF9jb2xvciIgOiAiUkdCQSgwLjA5MDkwOSwxLjAwMDAwMCwwLjAwMDAwMCwxLjAwMDAwMCkiLAogICAgICAgICAgImNsYXNzIiA6ICJTd2l0Y2giLAogICAgICAgICAgImJhY2tncm91bmRfY29sb3IiIDogIlJHQkEoMC4yMzk5NTMsMC4yMzk5NTMsMC4yMzk5NTMsMS4wMDAwMDApIiwKICAgICAgICAgICJ2YWx1ZSIgOiBmYWxzZSwKICAgICAgICAgICJ1dWlkIiA6ICJCOEVBRTJEQS1BRDRFLTRBM0MtODc0MS04MEJFMjhFREM1OTgiLAogICAgICAgICAgIm5hbWUiIDogIkNoYWdlIgogICAgICAgIH0sCiAgICAgICAgInNlbGVjdGVkIiA6IGZhbHNlCiAgICAgIH0sCiAgICAgIHsKICAgICAgICAibm9kZXMiIDogWwoKICAgICAgICBdLAogICAgICAgICJmcmFtZSIgOiAie3syNTgsIDQ0OH0sIHs1MSwgMzF9fSIsCiAgICAgICAgImNsYXNzIiA6ICJTd2l0Y2giLAogICAgICAgICJhdHRyaWJ1dGVzIiA6IHsKICAgICAgICAgICJmbGV4IiA6ICJMUlRCIiwKICAgICAgICAgICJhY3Rpb24iIDogIlN3aXRjaFNlbGVjdGVyIiwKICAgICAgICAgICJ0aW50X2NvbG9yIiA6ICJSR0JBKDAuMDkwOTA5LDEuMDAwMDAwLDAuMDAwMDAwLDEuMDAwMDAwKSIsCiAgICAgICAgICAiZnJhbWUiIDogInt7MTUxLCAzMDR9LCB7NTEsIDMxfX0iLAogICAgICAgICAgImNsYXNzIiA6ICJTd2l0Y2giLAogICAgICAgICAgImJhY2tncm91bmRfY29sb3IiIDogIlJHQkEoMC4yNDExMzUsMC4yNDExMzUsMC4yNDExMzUsMS4wMDAwMDApIiwKICAgICAgICAgICJ2YWx1ZSIgOiBmYWxzZSwKICAgICAgICAgICJ1dWlkIiA6ICI5MDFBQ0U4Qy05RUE2LTQ2QjgtQTNBNS1DQUExMTU4Mjg0MzUiLAogICAgICAgICAgIm5hbWUiIDogIkVsZW1lbnQiCiAgICAgICAgfSwKICAgICAgICAic2VsZWN0ZWQiIDogZmFsc2UKICAgICAgfSwKICAgICAgewogICAgICAgICJub2RlcyIgOiBbCgogICAgICAgIF0sCiAgICAgICAgImZyYW1lIiA6ICJ7ezY5LCA1MjZ9LCB7MjE2LCA5OX19IiwKICAgICAgICAiY2xhc3MiIDogIkJ1dHRvbiIsCiAgICAgICAgImF0dHJpYnV0ZXMiIDogewogICAgICAgICAgImZsZXgiIDogIkxSVEIiLAogICAgICAgICAgImFjdGlvbiIgOiAiQ3JlYXRlQ2FyZCIsCiAgICAgICAgICAiZnJhbWUiIDogInt7MTM2LCAzMDN9LCB7ODAsIDMyfX0iLAogICAgICAgICAgInRpbnRfY29sb3IiIDogIlJHQkEoMS4wMDAwMDAsMS4wMDAwMDAsMS4wMDAwMDAsMS4wMDAwMDApIiwKICAgICAgICAgICJ0aXRsZSIgOiAi5L2c5oiQIiwKICAgICAgICAgICJ1dWlkIiA6ICIxQ0VFQkJDNC1BQjkxLTREMDktQjhDMC04M0Q2OUFFNzhDMTgiLAogICAgICAgICAgImNsYXNzIiA6ICJCdXR0b24iLAogICAgICAgICAgImJhY2tncm91bmRfY29sb3IiIDogIlJHQkEoMC4yNDExMzUsMC4yNDExMzUsMC4yNDExMzUsMS4wMDAwMDApIiwKICAgICAgICAgICJuYW1lIiA6ICJDcmVhdGUiLAogICAgICAgICAgImZvbnRfc2l6ZSIgOiAzMAogICAgICAgIH0sCiAgICAgICAgInNlbGVjdGVkIiA6IGZhbHNlCiAgICAgIH0sCiAgICAgIHsKICAgICAgICAibm9kZXMiIDogWwoKICAgICAgICBdLAogICAgICAgICJmcmFtZSIgOiAie3sxMDgsIDI2fSwgezIxNSwgNTl9fSIsCiAgICAgICAgImNsYXNzIiA6ICJMYWJlbCIsCiAgICAgICAgImF0dHJpYnV0ZXMiIDogewogICAgICAgICAgImZsZXgiIDogIkxSVEIiLAogICAgICAgICAgIm5hbWUiIDogIiIsCiAgICAgICAgICAidGV4dF9jb2xvciIgOiAiUkdCQSgxLjAwMDAwMCwxLjAwMDAwMCwxLjAwMDAwMCwxLjAwMDAwMCkiLAogICAgICAgICAgImZyYW1lIiA6ICJ7ezEwMSwgMzAzfSwgezE1MCwgMzJ9fSIsCiAgICAgICAgICAidXVpZCIgOiAiNjM4RkE0NjItNjlFRi00MEY1LTg4MTItOTUyMTQyNTAwRDRDIiwKICAgICAgICAgICJjbGFzcyIgOiAiTGFiZWwiLAogICAgICAgICAgImFsaWdubWVudCIgOiAiY2VudGVyIiwKICAgICAgICAgICJ0ZXh0IiA6ICJBcnRpZmFjdGVyIiwKICAgICAgICAgICJmb250X3NpemUiIDogNTAsCiAgICAgICAgICAiZm9udF9uYW1lIiA6ICI8U3lzdGVtPiIKICAgICAgICB9LAogICAgICAgICJzZWxlY3RlZCIgOiB0cnVlCiAgICAgIH0KICAgIF0sCiAgICAiZnJhbWUiIDogInt7MCwgMH0sIHszNTIsIDYzOH19IiwKICAgICJjbGFzcyIgOiAiVmlldyIsCiAgICAiYXR0cmlidXRlcyIgOiB7CiAgICAgICJib3JkZXJfY29sb3IiIDogIlJHQkEoMC4wMDAwMDAsMC4wMDAwMDAsMC4wMDAwMDAsMS4wMDAwMDApIiwKICAgICAgImVuYWJsZWQiIDogdHJ1ZSwKICAgICAgImJhY2tncm91bmRfY29sb3IiIDogIlJHQkEoMC4xMDQwMTksMC4xMDQwMTksMC4xMDQwMTksMS4wMDAwMDApIiwKICAgICAgIm5hbWUiIDogIkFydGlmYWN0ZXIiLAogICAgICAidGludF9jb2xvciIgOiAiUkdCQSgxLjAwMDAwMCwwLjA2MjUwMCwwLjA2MjUwMCwxLjAwMDAwMCkiLAogICAgICAiZmxleCIgOiAiIgogICAgfSwKICAgICJzZWxlY3RlZCIgOiBmYWxzZQogIH0KXQ==')
+
+
+PY3 = sys.version_info[0] >= 3
+
+if PY3:
+    basestring = str
+    string_lowercase = string.ascii_lowercase
+    xrange = range
+    long = int
+
+class objc_util(object):
+    def __init__(self):
+        super(objc_util, self).__init__()
+        self.LP64 = (sizeof(c_void_p) == 8)
+        self._retained_globals = []
+        self._cached_classes = {}
+        self._cached_instances = weakref.WeakValueDictionary()
+        self._tracefunc = None
+        self.c = cdll.LoadLibrary(None)
+        self.class_getName = self.c.class_getName
+        self.class_getName.restype = c_char_p
+        self.class_getName.argtypes = [c_void_p]
+        self.class_getSuperclass = self.c.class_getSuperclass
+        self.class_getSuperclass.restype = c_void_p
+        self.class_getSuperclass.argtypes = [c_void_p]
+        self.class_addMethod = self.c.class_addMethod
+        self.class_addMethod.restype = c_bool
+        self.class_addMethod.argtypes = [c_void_p, c_void_p, c_void_p, c_char_p]
+        self.class_getInstanceMethod = self.c.class_getInstanceMethod
+        self.class_getInstanceMethod.restype = c_void_p
+        self.class_getInstanceMethod.argtypes = [c_void_p, c_void_p]
+        self.class_getClassMethod = self.c.class_getClassMethod
+        self.class_getClassMethod.restype = c_void_p
+        self.class_getClassMethod.argtypes = [c_void_p, c_void_p]
+        self.objc_allocateClassPair = self.c.objc_allocateClassPair
+        self.objc_allocateClassPair.restype = c_void_p
+        self.objc_allocateClassPair.argtypes = [c_void_p, c_char_p, c_int]
+        self.objc_registerClassPair = self.c.objc_registerClassPair
+        self.objc_registerClassPair.restype = None
+        self.objc_registerClassPair.argtypes = [c_void_p]
+        self.objc_getClass = self.c.objc_getClass
+        self.objc_getClass.argtypes = [c_char_p]
+        self.objc_getClass.restype = c_void_p
+        self.objc_getClassList = self.c.objc_getClassList
+        self.objc_getClassList.restype = c_int
+        self.objc_getClassList.argtypes = [c_void_p, c_int]
+        self.method_getTypeEncoding = self.c.method_getTypeEncoding
+        self.method_getTypeEncoding.argtypes = [c_void_p]
+        self.method_getTypeEncoding.restype = c_char_p
+        self.sel_getName = self.c.sel_getName
+        self.sel_getName.restype = c_char_p
+        self.sel_getName.argtypes = [c_void_p]
+        self.sel_registerName = self.c.sel_registerName
+        self.sel_registerName.restype = c_void_p
+        self.sel_registerName.argtypes = [c_char_p]
+        self.object_getClass = self.c.object_getClass
+        self.object_getClass.argtypes = [c_void_p]
+        self.object_getClass.restype = c_void_p
+        self.class_copyMethodList = self.c.class_copyMethodList
+        self.class_copyMethodList.restype = ctypes.POINTER(c_void_p)
+        self.class_copyMethodList.argtypes = [c_void_p, ctypes.POINTER(ctypes.c_uint)]
+        self.class_getProperty = self.c.class_getProperty
+        self.class_getProperty.restype = c_void_p
+        self.class_getProperty.argtypes = [c_void_p, c_char_p]
+        self.property_getAttributes = self.c.property_getAttributes
+        self.property_getAttributes.argtypes = [c_void_p]
+        self.property_getAttributes.restype = c_char_p
+        self.method_getName = self.c.method_getName
+        self.method_getName.restype = c_void_p
+        self.method_getName.argtypes = [c_void_p]
+        self.objc_getProtocol = self.c.objc_getProtocol
+        self.objc_getProtocol.restype = c_void_p
+        self.objc_getProtocol.argtypes = [c_char_p]
+        self.protocol_getMethodDescription = self.c.protocol_getMethodDescription
+        self.protocol_getMethodDescription.restype = objc_method_description
+        self.protocol_getMethodDescription.argtypes = [c_void_p, c_void_p, c_bool, c_bool]
+        self.objc_msgSend = self.c.objc_msgSend
+        if not self.LP64:
+            self.objc_msgSend_stret = self.c.objc_msgSend_stret
+        self.free = self.c.free
+        self.free.argtypes = [c_void_p]
+        self.free.restype = None
+        self.CGFloat = c_double if self.LP64 else c_float
+        self.NSInteger = c_long if self.LP64 else c_int
+        self.NSUInteger = c_ulong if self.LP64 else c_uint
+        self.NSUTF8StringEncoding = 4
+        self.NS_UTF8 = NSUTF8StringEncoding
+        self.type_encodings = {'c': c_byte, 'i': c_int, 's': c_short, 'l': c_int32, 'q': c_longlong, 'C': c_ubyte, 'I': c_uint, 'S': c_ushort, 'L': c_ulong, 'Q': c_ulonglong, 'f': c_float, 'd': c_double, 'B': c_bool, 'v': None, '*': c_char_p, '@': c_void_p, '#': c_void_p, ':': c_void_p, '{CGPoint}': self.CGPoint, '{CGSize}': self.CGSize, '{CGRect}': self.CGRect, '{CGVector}': self.CGVector, '{CGAffineTransform}': self.CGAffineTransform, '{UIEdgeInsets}': self.UIEdgeInsets, '{_NSRange}': self.NSRange, '?': c_void_p, '@?': c_void_p}
+        self._enclosed = pp.Forward()
+        self._nested_curlies = pp.nestedExpr('{', '}', content=self._enclosed)
+        self._enclosed << (pp.Word(pp.alphas + '?_' + pp.nums) | '=' | _nested_curlies)
+        self._cached_parse_types_results = {}
+        self.NSObject = self.ObjCClass('NSObject')
+        self.NSDictionary = self.ObjCClass('NSDictionary')
+        self.NSMutableDictionary = self.ObjCClass('NSMutableDictionary')
+        self.NSArray = self.ObjCClass('NSArray')
+        self.NSMutableArray = self.ObjCClass('NSMutableArray')
+        self.NSSet = self.ObjCClass('NSSet')
+        self.NSMutableSet = self.ObjCClass('NSMutableSet')
+        self.NSString = self.ObjCClass('NSString')
+        self.NSMutableString = self.ObjCClass('NSMutableString')
+        self.NSData = self.ObjCClass('NSData')
+        self.NSMutableData = self.ObjCClass('NSMutableData')
+        self.NSNumber = self.ObjCClass('NSNumber')
+        self.NSURL = self.ObjCClass('NSURL')
+        self.NSEnumerator = self.ObjCClass('NSEnumerator')
+        self.NSThread = self.ObjCClass('NSThread')
+        self.NSBundle = self.ObjCClass('NSBundle')
+        self.UIColor = self.ObjCClass('UIColor')
+        self.UIImage = self.ObjCClass('UIImage')
+        self.UIBezierPath = self.ObjCClass('UIBezierPath')
+        self.UIApplication = self.ObjCClass('UIApplication')
+        self.UIView = self.ObjCClass('UIView')
+        self.OMMainThreadDispatcher_name = b'OMMainThreadDispatcher_3' if PY3 else 'OMMainThreadDispatcher'
+        try:
+            self.OMMainThreadDispatcher = self.ObjCClass(self.OMMainThreadDispatcher_name)
+        except ValueError:
+            self.IMPTYPE = ctypes.CFUNCTYPE(None, c_void_p, c_void_p)
+            self.imp = self.IMPTYPE(self.OMMainThreadDispatcher_invoke_imp)
+            self.retain_global(self.imp)
+            self.NSObject = self.ObjCClass('NSObject')
+            self.class_ptr = self.objc_allocateClassPair(self.NSObject.ptr, self.OMMainThreadDispatcher_name, 0)
+            self.class_addMethod(self.class_ptr, self.sel('invoke'), self.imp, b'v16@0:0')
+            self.objc_registerClassPair(self.class_ptr)
+            self.OMMainThreadDispatcher = self.ObjCClass(self.OMMainThreadDispatcher_name)
+        self.NSObject_class_methods = ['alloc', 'new', 'superclass', 'isSubclassOfClass_', 'instancesRespondToSelector_', 'description', 'cancelPreviousPerformRequestsWithTarget_', 'cancelPreviousPerformRequestsWithTarget_selector_object_']
+        self.NSObject_instance_methods = ['init', 'copy', 'mutableCopy', 'dealloc', 'performSelector_withObject_afterDelay_', 'performSelectorOnMainThread_withObject_waitUntilDone_', 'performSelectorInBackground_withObject_']
+        self.type_encodings['@?'] = self.ObjCBlock
+        self.ExceptionHandlerFuncType = ctypes.CFUNCTYPE(None, c_void_p)
+        self.NSSetUncaughtExceptionHandler = objc_util.c.NSSetUncaughtExceptionHandler
+        self.NSSetUncaughtExceptionHandler.restype = None
+        self.NSSetUncaughtExceptionHandler.argtypes = [ExceptionHandlerFuncType]
+        self._handler = ExceptionHandlerFuncType(_objc_exception_handler)
+        self.NSSetUncaughtExceptionHandler(_handler)
+
+        class objc_method_description(Structure):
+            _fields_ = [('sel', c_void_p), ('types', c_char_p)]
+
+        class CGPoint(Structure):
+            _fields_ = [('x', objc_util.CGFloat), ('y', objc_util.CGFloat)]
+
+        class CGSize(Structure):
+            _fields_ = [('width', objc_util.CGFloat), ('height', objc_util.CGFloat)]
+
+        class CGVector(Structure):
+            _fields_ = [('dx', objc_util.CGFloat), ('dy', objc_util.CGFloat)]
+
+        class CGRect(Structure):
+            _fields_ = [('origin', objc_util.CGPoint), ('size', objc_util.CGSize)]
+
+        class CGAffineTransform(Structure):
+            _fields_ = [('a', objc_util.CGFloat), ('b', objc_util.CGFloat), ('c', objc_util.CGFloat), ('d', objc_util.CGFloat), ('tx', objc_util.CGFloat), ('ty', objc_util.CGFloat)]
+
+        class UIEdgeInsets(Structure):
+            _fields_ = [('top', objc_util.CGFloat), ('left', objc_util.CGFloat), ('bottom', objc_util.CGFloat), ('right', objc_util.CGFloat)]
+
+        class NSRange(Structure):
+            _fields_ = [('location', objc_util.NSUInteger), ('length', objc_util.NSUInteger)]
+
+        class _block_descriptor(Structure):
+            _fields_ = [('reserved', c_ulong), ('size', c_ulong), ('copy_helper', c_void_p), ('dispose_helper', c_void_p), ('signature', c_char_p)]
+
+        def filter_list(*args, **kwargs):
+            if PY3:
+                return list(filter(*args, **kwargs))
+            return filter(*args, **kwargs)
+
+        def split_encoding(encoding):
+            type_encodings = []
+            braces, brackets = 0, 0
+            typecode = ''
+            if PY3 and isinstance(encoding, bytes):
+                encoding = encoding.decode('ascii')
+            for c in encoding:
+                if c == '{':
+                    if typecode and typecode[-1:] != '^' and braces == 0 and brackets == 0:
+                        type_encodings.append(typecode)
+                        typecode = ''
+                    typecode += c
+                    braces += 1
+                elif c == '}':
+                    typecode += c
+                    braces -= 1
+                elif c == '[':
+                    if typecode and typecode[-1:] != '^' and braces == 0 and brackets == 0:
+                        type_encodings.append(typecode)
+                        typecode = ''
+                    typecode += c
+                    brackets += 1
+                elif c == ']':
+                    typecode += c
+                    brackets -= 1
+                elif braces or brackets:
+                    typecode += c
+                elif c in string.digits:
+                    pass
+                elif c in 'rnNoORV':
+                    pass
+                elif c in '^cislqCISLQfdBv*@#:b?':
+                    if c == '?' and typecode[-1:] == '@':
+                        typecode += c
+                    elif typecode and typecode[-1:] == '^':
+                        typecode += c
+                    else:
+                        if typecode:
+                            type_encodings.append(typecode)
+                        typecode = c
+            if typecode:
+                type_encodings.append(typecode)
+            return type_encodings
+
+        def struct_from_tuple(cls, t):
+            args = []
+            for i, field_value in enumerate(t):
+                if isinstance(field_value, tuple):
+                    args.append(struct_from_tuple(cls._fields_[i][1], field_value))
+                else:
+                    args.append(field_value)
+            return cls(*args)
+            
+        def _struct_class_from_fields(fields):
+            class AnonymousStructure(Structure):
+                from_tuple = classmethod(struct_from_tuple)
+            struct_fields = []
+            for i, field in enumerate(fields):
+                if isinstance(field, tuple):
+                    struct_fields.append(field)
+                else:
+                    struct_fields.append((string_lowercase[i], _struct_class_from_fields(field)))
+                    i += 1
+            AnonymousStructure._fields_ = struct_fields
+            return AnonymousStructure
+
+        def _list_to_fields(result):
+            fields = []
+            i = 0
+            if isinstance(result, basestring):
+                for char in split_encoding(result):
+                    c_type = parse_types(char)[0]
+                    fields.append((string_lowercase[i], c_type))
+                    i += 1
+            else:
+                if len(result) == 1:
+                    return _list_to_fields(result[0])
+                for r in result:
+                    fields.append(_list_to_fields(r))
+            return fields
+
+        def _result_to_list(result):
+            struct_result = []
+            for member in result:
+                if isinstance(member, basestring):
+                    struct_result.append(member)
+                else:
+                    struct_result.append(_result_to_list([member[2]]))
+            return struct_result
+
+        def parse_struct(encoding):
+            comps = objc_util._enclosed.parseString(encoding).asList()[0]
+            struct_name = comps[0]
+            struct_members = comps[2:]
+            fields = _list_to_fields(_result_to_list(struct_members))
+            struct_class = _struct_class_from_fields(fields)
+            struct_class.__name__ = (struct_name + '_Structure').replace('?', '_')
+            return struct_class
+
+        def parse_types(type_encoding):
+            cached_result = objc_util._cached_parse_types_results.get(type_encoding)
+            if cached_result:
+                return cached_result
+            def get_type_for_code(enc_str):
+                if enc_str.startswith('{'):
+                    struct_name = enc_str[0:enc_str.find('=')] + '}'
+                    if struct_name in objc_util.type_encodings:
+                        return objc_util.type_encodings[struct_name]
+                    else:
+                        return parse_struct(enc_str)
+                if enc_str[0] in 'rnNoORV':
+                    enc_str = enc_str[1:]
+                if enc_str[0] == '^':
+                    if re.match(r'\^\{\w+=#?\}', enc_str):
+                        return c_void_p
+                    else:
+                        return POINTER(get_type_for_code(enc_str[1:]))
+                if enc_str[0] == '[':
+                    return c_void_p
+                try:
+                    t = objc_util.type_encodings[enc_str]
+                    return t
+                except KeyError:
+                    raise NotImplementedError('Unsupported type encoding (%s)' % (enc_str,))
+            encoded_types = filter_list(lambda x: bool(x), split_encoding(type_encoding))
+            encoded_argtypes = encoded_types[3:]
+            argtypes = [get_type_for_code(x) for x in encoded_argtypes]
+            restype = get_type_for_code(encoded_types[0])
+            cached_result = (restype, [c_void_p, c_void_p] + argtypes, encoded_argtypes)
+            objc_util._cached_parse_types_results[type_encoding] = cached_result
+            return cached_result
+
+        def sel(sel_name):
+            if PY3 and isinstance(sel_name, str):
+                sel_name = sel_name.encode('ascii')
+            return objc_util.sel_registerName(sel_name)
+
+        def _first_letter_cap(s):
+            if not s:
+                return ''
+            return s[0].upper() + s[1:]
+
+        def get_possible_method_names(name, args, kwargs):
+            if '_' in name:
+                return [(name, [])]
+            if name.endswith('With'):
+                name = name[:-4]
+            possible_names = []
+            if len(args) == 0 and len(kwargs) == 0:
+                possible_names.append((name, []))
+            elif len(kwargs) == 0 and len(args) == 1:
+                possible_names.append((name + '_', []))
+            else:
+                permutations = itertools.permutations(kwargs.keys())
+                found_methods = []
+                for perm in permutations:
+                    name1 = name + '_' + '_'.join(perm) + '_'
+                    possible_names.append((name1, list(perm)))
+                    if len(args) == 0:
+                        name2 = name + 'With%s_' % (_first_letter_cap(perm[0]),) + '_'.join(perm[1:])
+                        if len(perm) > 1:
+                            name2 += '_'
+                        possible_names.append((name2, list(perm)))
+                        name3 = name + _first_letter_cap(perm[0]) + '_' + '_'.join(perm[1:])
+                        if len(perm) > 1:
+                            name3 += '_'
+                        possible_names.append((name3, list(perm)))
+                        
+            return possible_names
+
+        def resolve_cls_method(cls, name, args, kwargs):
+            kwargs_copy = dict(kwargs)
+            if 'argtypes' in kwargs_copy:
+                del kwargs_copy['argtypes']
+            if 'restype' in kwargs_copy:
+                del kwargs_copy['restype']
+            possible_names = get_possible_method_names(name, args, kwargs_copy)
+            valid_names = []
+            for method_name, kwarg_order in possible_names:
+                try:
+                    meth = self.ObjCClassMethod(cls, method_name)
+                    valid_names.append((method_name, kwarg_order))
+                except AttributeError:
+                    pass
+            if len(valid_names) == 1:
+                return valid_names[0]
+            elif len(valid_names) == 0:
+                raise AttributeError('No method found for %s' % (name,))
+            else:
+                raise AttributeError('Method name is ambiguous')
+
+        def resolve_instance_method(obj, name, args, kwargs):
+            kwargs_copy = dict(kwargs)
+            if 'argtypes' in kwargs_copy:
+                del kwargs_copy['argtypes']
+            if 'restype' in kwargs_copy:
+                del kwargs_copy['restype']
+            possible_names = get_possible_method_names(name, args, kwargs_copy)
+            valid_names = []
+            for method_name, kwarg_order in possible_names:
+                try:
+                    possibly_property = len(args) == 0 and len(kwargs) == 0
+                    meth = ObjCInstanceMethod(obj, method_name, allow_property=possibly_property)
+                    valid_names.append((method_name, kwarg_order))
+                except AttributeError:
+                    pass
+            if len(valid_names) == 1:
+                return valid_names[0]
+            elif len(valid_names) == 0:
+                raise AttributeError('No method found for %s' % (name,))
+            else:
+                raise AttributeError('Method name is ambiguous')
+
+        class ObjCClass(object):
+            def __new__(cls, name):
+                if PY3 and isinstance(name, str):
+                    name = name.encode('ascii')
+                cached_class = objc_util._cached_classes.get(name)
+                if cached_class:
+                    return cached_class
+                cached_class = super(ObjCClass, cls).__new__(cls)
+                objc_util._cached_classes[name] = cached_class
+                return cached_class
+            
+            def __init__(self, name):
+                if PY3 and isinstance(name, str):
+                    name = name.encode('ascii')
+                    
+                self.ptr = objc_util.objc_getClass(name)
+                if self.ptr is None:
+                    raise ValueError('no Objective-C class named \'%s\' found' % (name,))
+                self._as_parameter_ = self.ptr
+                self.class_name = name
+                self._cached_methods = {}
+            
+            def __str__(self):
+                return '<ObjCClass: %s>' % (self.class_name,)
+            
+            def __eq__(self, other):
+                return isinstance(other, objc_util.ObjCClass) and self.class_name == other.class_name
+            
+            def __getattr__(self, attr):
+                cached_method = self._cached_methods.get(attr, None)
+                if not cached_method:
+                    if '_' in attr:
+                        cached_method = objc_util.ObjCClassMethod(self, attr)
+                    else:
+                        cached_method = objc_util.ObjCClassMethodProxy(self, attr)
+                    self._cached_methods[attr] = cached_method
+                return cached_method
+            
+            def __dir__(self):
+                objc_class_ptr = objc_util.object_getClass(self.ptr)
+                py_methods = []
+                while objc_class_ptr is not None:
+                    num_methods = c_uint(0)
+                    method_list_ptr = objc_util.class_copyMethodList(objc_class_ptr, byref(num_methods))
+                    for i in xrange(num_methods.value):
+                        selector = objc_util.method_getName(method_list_ptr[i])
+                        sel_name = objc_util.sel_getName(selector)
+                        if PY3:
+                            sel_name = sel_name.decode('ascii')
+                        py_method_name = sel_name.replace(':', '_')
+                        if '.' not in py_method_name:
+                            py_methods.append(py_method_name)
+                    objc_util.free(method_list_ptr)
+                    objc_class_ptr = objc_util.class_getSuperclass(objc_class_ptr)
+                    if objc_class_ptr == objc_util.object_getClass(objc_util.NSObject):
+                        py_methods += NSObject_class_methods
+                        break
+                py_methods = sorted(set(py_methods))
+                return py_methods
+
+            @classmethod
+            def get_names(cls, prefix=None):
+                num_classes = objc_util.objc_getClassList(None, 0)
+                buffer = (c_void_p * num_classes)()
+                objc_util.objc_getClassList(buffer, num_classes)
+                class_names = []
+                for i in xrange(num_classes):
+                    n = objc_util.class_getName(buffer[i])
+                    if PY3:
+                        n = n.decode('ascii')
+                    class_names.append(n)
+                filtered_list = class_names if prefix is None else filter_list(lambda x: x.startswith(prefix), class_names)
+                return sorted(filtered_list)
+            
+            @classmethod
+            def create(cls, *args, **kwargs):
+                return create_objc_class(*args, **kwargs)
+
+        class ObjCIterator(object):
+            def __init__(self, obj):
+                self.enumerator = obj.objectEnumerator()
+            
+            def __iter__(self):
+                return self
+            
+            def next(self):
+                next_obj = self.enumerator.nextObject()
+                if next_obj is None:
+                    raise StopIteration()
+                return next_obj
+            
+            def __next__(self):
+                return self.next()
+        class ObjCInstance(object):    
+            def __new__(cls, ptr):
+                if isinstance(ptr, ObjCInstance):
+                    return ptr
+                if hasattr(ptr, '_objc_ptr'):
+                    ptr = ptr._objc_ptr
+                if isinstance(ptr, c_void_p):
+                    ptr = ptr.value
+                cached_instance = objc_util._cached_instances.get(ptr)
+                if cached_instance is not None:
+                    return cached_instance
+                objc_instance = super(ObjCInstance, cls).__new__(cls)
+                objc_util._cached_instances[ptr] = objc_instance
+                objc_instance.ptr = ptr
+                objc_instance._as_parameter_ = ptr
+                objc_instance._cached_methods = {}
+                objc_instance.weakrefs = weakref.WeakValueDictionary()
+                if ptr and not b'NSAutoreleasePool' in objc_util.class_getName(objc_util.object_getClass(ptr)):
+                    objc_instance.retain(restype=c_void_p, argtypes=[])
+                return objc_instance
+                
+            def __str__(self):
+                objc_util.objc_msgSend = c['objc_msgSend']
+                objc_util.objc_msgSend.argtypes = [c_void_p, c_void_p]
+                objc_util.objc_msgSend.restype = c_void_p
+                desc = objc_msgSend(self.ptr, sel('description'))
+                objc_util.objc_msgSend.argtypes = [c_void_p, c_void_p]
+                objc_util.objc_msgSend.restype = c_char_p
+                desc_str = objc_util.objc_msgSend(desc, sel('UTF8String'))
+                if PY3:
+                    return desc_str.decode('utf-8')
+                return desc_str
+            
+            def _get_objc_classname(self):
+                return objc_util.class_getName(objc_util.object_getClass(self.ptr))
+            
+            def __repr__(self):
+                return '<%s: %s>' % (self._get_objc_classname(), str(self))
+            
+            def __eq__(self, other):
+                return isinstance(other, ObjCInstance) and self.ptr == other.ptr
+            
+            def __hash__(self):
+                return hash(self.ptr)
+            
+            def __iter__(self):
+                if any(self.isKindOfClass_(c) for c in (objc_util.NSArray, objc_util.NSDictionary, objc_util.NSSet)):
+                    return ObjCIterator(self)
+                raise TypeError('%s is not iterable' % (self._get_objc_classname(),))
+            
+            def __nonzero__(self):
+                try:
+                    return len(self) != 0
+                except TypeError:
+                    return self.ptr != None
+            
+            def __bool__(self):
+                return self.__nonzero__()
+            
+            def __len__(self):
+                if any(self.isKindOfClass_(c) for c in (objc_util.NSArray, objc_util.NSDictionary, objc_util.NSSet)):
+                    return self.count()
+                raise TypeError('object of type \'%s\' has no len()' % (self._get_objc_classname(),))
+            
+            def __getitem__(self, key):
+                if self.isKindOfClass_(objc_util.NSArray):
+                    if not isinstance(key, (int, long)):
+                        raise TypeError('array indices must be integers not %s' % (type(key),))
+                    array_length = self.count()
+                    if key < 0:
+                        key = array_length + key
+                    if key < 0 or key >= array_length:
+                        raise IndexError('array index out of range')
+                    return self.objectAtIndex_(key)
+                elif self.isKindOfClass_(objc_util.NSDictionary):
+                    ns_key = ns(key)
+                    return self.objectForKey_(ns_key)
+                raise TypeError('%s does not support __getitem__' % (self._get_objc_classname(),))
+            
+            def __delitem__(self, key):
+                if self.isKindOfClass_(objc_util.NSMutableArray):
+                    if not isinstance(key, (int, long)):
+                        raise TypeError('array indices must be integers not %s' % (type(key),))
+                    array_length = self.count()
+                    if key < 0:
+                        key = array_length + key
+                    if key < 0 or key >= array_length:
+                        raise IndexError('array index out of range')
+                    self.removeObjectAtIndex_(key)
+                elif self.isKindOfClass_(objc_util.NSMutableDictionary):
+                    ns_key = ns(key)
+                    return self.removeObjectForKey_(ns_key)
+                else:
+                    raise TypeError('%s does not support __delitem__' % (self._get_objc_classname(),))
+            
+            def __setitem__(self, key, value):
+                if self.isKindOfClass_(objc_util.NSMutableArray):
+                    if not isinstance(key, (int, long)):
+                        raise TypeError('array indices must be integers not %s' % (type(key),))
+                    array_length = self.count()
+                    if key < 0:
+                        key = array_length + key
+                    if key < 0 or key >= array_length:
+                        raise IndexError('array index out of range')
+                    self.replaceObjectAtIndex_withObject_(key, ns(value))
+                elif self.isKindOfClass_(objc_util.NSMutableDictionary):
+                    self.setObject_forKey_(ns(value), ns(key))
+                else:
+                    raise TypeError('%s does not support __setitem__' % (self._get_objc_classname(),))
+                                
+            def __getattr__(self, attr):
+                cached_method = self._cached_methods.get(attr, None)
+                if not cached_method:
+                    if '_' in attr:
+                        cached_method = ObjCInstanceMethod(self, attr)
+                    else:
+                        cached_method = ObjCInstanceMethodProxy(self, attr)
+                    self._cached_methods[attr] = cached_method
+                return cached_method
+            
+            def __setattr__(self, name, value):
+                if name in ('ptr', 'weakrefs', '_cached_methods', '_as_parameter_'):
+                    self.__dict__[name] = value
+                    return
+                try:
+                    setter_method = getattr(self, 'set%s%s_' % (name[0].upper(), name[1:]))
+                    setter_method(value)
+                except AttributeError:
+                    self.__dict__[name] = value
+            
+            def __dir__(self):
+                objc_class_ptr = objc_util.object_getClass(self.ptr)
+                py_methods = []
+                while objc_class_ptr is not None:
+                    num_methods = c_uint(0)
+                    method_list_ptr = objc_util.class_copyMethodList(objc_class_ptr, byref(num_methods))
+                    for i in xrange(num_methods.value):
+                        selector = objc_util.method_getName(method_list_ptr[i])
+                        sel_name = objc_util.sel_getName(selector)
+                        if PY3:
+                            sel_name = sel_name.decode('ascii')
+                        py_method_name = sel_name.replace(':', '_')
+                        if '.' not in py_method_name:
+                            py_methods.append(py_method_name)
+                    objc_util.free(method_list_ptr)
+                    objc_class_ptr = objc_util.class_getSuperclass(objc_class_ptr)
+                    if objc_class_ptr == objc_util.NSObject.ptr:
+                        py_methods += NSObject_instance_methods
+                        break
+                return sorted(set(py_methods))
+
+            def __del__(self):
+                objc_util.objc_msgSend = c['objc_msgSend']
+                objc_util.objc_msgSend.argtypes = [c_void_p, c_void_p]
+                objc_util.objc_msgSend.restype = None
+                objc_util.objc_msgSend(self.ptr, sel('release'))
+
+        def _get_possible_selector_names(method_name):
+            izip_longest = itertools.zip_longest if PY3 else itertools.izip_longest
+            return [''.join([x+y for x, y in izip_longest(method_name.split('_'), s, fillvalue='')]) for s in [''.join(x) for x in itertools.product(':_', repeat=len(method_name.split('_'))-1)]]
+
+        def _auto_wrap(arg, typecode, argtype):
+            if typecode == '@' or typecode.startswith('^{'):
+                return ns(arg)
+            elif typecode == ':' and isinstance(arg, basestring):
+                return sel(arg)
+            elif issubclass(argtype, Structure) and isinstance(arg, tuple):
+                return struct_from_tuple(argtype, arg)
+            return arg
+
+
+        class ObjCClassMethodProxy(object):
+            def __init__(self, cls, name):
+                self.cls = weakref.ref(cls)
+                self.name = name
+                self.method_cache = {}
+            
+            def __call__(self, *args, **kwargs):
+                cls = self.cls()
+                if cls is None:
+                    return
+                cache_key = '%i/' % (len(args),) + ','.join(sorted(kwargs.keys()))
+                cached = self.method_cache.get(cache_key)
+                if cached:
+                    method, kwarg_order = cached
+                else:
+                    method_name, kwarg_order = resolve_cls_method(cls, self.name, args, kwargs)
+                    method = objc_util.ObjCClassMethod(cls, method_name)
+                    self.method_cache[cache_key] = (method, kwarg_order)
+                ordered_args = list(args) + [kwargs[key] for key in kwarg_order]
+                kw = {k: kwargs[k] for k in ('restype', 'argtypes') if k in kwargs}
+                return method(*ordered_args, **kw)
+
+        class ObjCClassMethod(object):
+            def __init__(self, cls, method_name):
+                self.cls = cls
+                self.sel_name = method_name.replace('_', ':')
+                method = objc_util.class_getClassMethod(cls.ptr, sel(self.sel_name))
+                if not method:
+                    possible_selector_names = _get_possible_selector_names(method_name)
+                    for possible_sel_name in possible_selector_names:
+                        method = objc_util.class_getClassMethod(cls.ptr, sel(possible_sel_name))
+                        if method:
+                            self.sel_name = possible_sel_name
+                            break
+                if method:
+                    self.method = method
+                    self.encoding = objc_util.method_getTypeEncoding(method)
+                else:
+                    raise AttributeError('No class method found for selector "%s"' % (self.sel_name))
+            
+            def __call__(self, *args, **kwargs):
+                cls = self.cls
+                if cls is None:
+                    return
+                type_encoding = self.encoding
+                try:
+                    argtypes = kwargs['argtypes']
+                    restype = kwargs['restype']
+                    argtypes = [c_void_p, c_void_p] + argtypes
+                except KeyError:
+                    restype, argtypes, argtype_encodings = parse_types(type_encoding)
+                    if len(args) != len(argtypes) - 2:
+                        raise TypeError('expected %i arguments, got %i' % (len(argtypes) - 2, len(args)))
+                    args = tuple(_auto_wrap(a, argtype_encodings[i], argtypes[i+2]) for i, a in enumerate(args))
+                objc_util.objc_msgSend = c['objc_msgSend']
+                objc_util.objc_msgSend.argtypes = argtypes
+                objc_util.objc_msgSend.restype = restype
+                res = objc_util.objc_msgSend(cls, sel(self.sel_name), *args)
+                return_type_enc = chr(type_encoding[0]) if PY3 else type_encoding[0]
+                if res and return_type_enc == '@':
+                    return ObjCInstance(res)
+                return res
+
+        class ObjCInstanceMethodProxy(object):
+            def __init__(self, obj, name):
+                self.obj = weakref.ref(obj)
+                self.name = name
+                self.method_cache = {}
+            
+            def __call__(self, *args, **kwargs):
+                obj = self.obj()
+                if obj is None:
+                    return
+                cache_key = '%i/' % (len(args),) + ','.join(sorted(kwargs.keys()))
+                cached = self.method_cache.get(cache_key)
+                if cached:
+                    method, kwarg_order = cached
+                else:
+                    method_name, kwarg_order = resolve_instance_method(obj, self.name, args, kwargs)
+                    method = ObjCInstanceMethod(obj, method_name)
+                    self.method_cache[cache_key] = (method, kwarg_order)
+                ordered_args = list(args) + [kwargs[key] for key in kwarg_order]
+                kw = {k: kwargs[k] for k in ('restype', 'argtypes') if k in kwargs}
+                return method(*ordered_args, **kw)
+
+        class ObjCInstanceMethod(object):
+            def __init__(self, obj, method_name, allow_property=True):
+                self.obj = obj
+                objc_class = objc_util.object_getClass(obj.ptr)
+                self.encoding = None
+                method = None
+                self.sel_name = method_name.replace('_', ':')
+                method = objc_util.class_getInstanceMethod(objc_class, sel(self.sel_name))
+                self._objc_msgSend = None
+                if not method and '_' in method_name:
+                    possible_selector_names = _get_possible_selector_names(method_name)
+                    for possible_sel_name in possible_selector_names:
+                        method = objc_util.class_getInstanceMethod(objc_class, sel(possible_sel_name))
+                        if method:
+                            self.sel_name = possible_sel_name
+                            break
+                if allow_property and not method and ((method_name.startswith('set') and self.sel_name.endswith(':')) or self.sel_name.find(':') == -1):
+                    prop_name = method_name
+                    if method_name.startswith('set'):
+                        prop_name = method_name[3].lower() + method_name[4:-1]
+                    else:
+                        prop_name = method_name
+                    if PY3 and isinstance(prop_name, str):
+                        prop_name = prop_name.encode('ascii')
+                    prop = objc_util.class_getProperty(objc_class, prop_name)
+                    if prop:
+                        prop_attrs = objc_util.property_getAttributes(prop)
+                        if PY3:
+                            prop_attrs = prop_attrs.decode('ascii')
+                        prop_type_encoding = re.search('T(.+?),', prop_attrs).group(1)
+                        if method_name.startswith('set'):
+                            self.encoding = 'v0@0:0' + prop_type_encoding + '0'
+                            if PY3:
+                                self.encoding = self.encoding.encode('ascii')
+                            sel_name_match = re.search(r'S(.*?)(:?,.*?|$)', prop_attrs)
+                            if sel_name_match:
+                                self.sel_name = sel_name_match.group(1)
+                        else:
+                            self.encoding = prop_type_encoding + '0@0:0'
+                            if PY3:
+                                self.encoding = self.encoding.encode('ascii')
+                            sel_name_match = re.search(r'G(.*?)(:?,.*?|$)', prop_attrs)
+                            if sel_name_match:
+                                self.sel_name = sel_name_match.group(1)
+                if not self.encoding and method:
+                    self.method = method
+                    self.encoding = objc_util.method_getTypeEncoding(method)
+                elif not self.encoding:
+                    raise AttributeError('No method found for selector "%s"' % (self.sel_name))
+            
+            def __call__(self, *args, **kwargs):
+                obj = self.obj
+                if obj is None:
+                    return
+                type_encoding = self.encoding
+                try:
+                    argtypes = kwargs['argtypes']
+                    restype = kwargs['restype']
+                    argtypes = [c_void_p, c_void_p] + argtypes
+                except KeyError:
+                    restype, argtypes, argtype_encodings = parse_types(type_encoding)
+                    if len(args) != len(argtypes) - 2:
+                        raise TypeError('expected %i arguments, got %i' % (len(argtypes) - 2, len(args)))
+                    args = tuple(_auto_wrap(a, argtype_encodings[i], argtypes[i+2]) for i, a in enumerate(args))
+                    
+                if not objc_util.LP64 and restype and issubclass(restype, Structure):
+                    retval = restype()
+                    objc_util.objc_msgSend_stret = c['objc_msgSend_stret']
+                    objc_util.objc_msgSend_stret.argtypes = [c_void_p] + argtypes
+                    objc_util.objc_msgSend_stret.restype = None
+                    objc_util.objc_msgSend_stret(byref(retval), obj.ptr, sel(self.sel_name), *args)
+                    return retval
+                else:
+                    objc_util.objc_msgSend = self._objc_msgSend
+                    if not objc_msgSend:
+                        objc_util.objc_msgSend = c['objc_msgSend']
+                        objc_util.objc_msgSend.argtypes = argtypes
+                        objc_util.objc_msgSend.restype = restype
+                        self._objc_msgSend = objc_msgSend
+                    
+                    res = objc_util.objc_msgSend(obj.ptr, sel(self.sel_name), *args)
+                    return_type_enc = chr(type_encoding[0]) if PY3 else type_encoding[0]
+                    if res and return_type_enc == '@':
+                        if res == obj.ptr:
+                            return obj
+                        return ObjCInstance(res)
+                    if restype == c_void_p and isinstance(res, int):
+                        res = c_void_p(res)
+                    return res
+
+        def load_framework(name):
+            return objc_util.NSBundle.bundleWithPath_('/System/Library/Frameworks/%s.framework' % (name,)).load()
+
+        class ObjCBlock(object):
+            def __init__(self, func, restype=None, argtypes=None):
+                if not callable(func):
+                    raise TypeError('%s is not callable' % func)
+                if argtypes is None:
+                    argtypes = []
+                InvokeFuncType = ctypes.CFUNCTYPE(restype, *argtypes)
+                class block_literal(Structure):
+                    _fields_ = [('isa', c_void_p), ('flags', c_int), ('reserved', c_int), ('invoke', InvokeFuncType), ('descriptor', _block_descriptor)]
+                block = block_literal()
+                block.flags = (1<<28)
+                block.invoke = InvokeFuncType(func)
+                block.isa = objc_util.ObjCClass('__NSGlobalBlock__').ptr
+                self.func = func
+                self._as_parameter_ = block if objc_util.LP64 else byref(block)
+            
+            @classmethod
+            def from_param(cls, param):
+                if isinstance(param, ObjCBlock) or param is None:
+                    return param
+                elif callable(param):
+                    block = ObjCBlock(param)
+                    param._block = block
+                    return block
+                raise TypeError('cannot convert parameter to block')
+            
+            def __call__(self, *args):
+                return self.func(*args)
+
+        def ns(py_obj):
+            if isinstance(py_obj, ObjCInstance):
+                return py_obj
+            if isinstance(py_obj, c_void_p):
+                return ObjCInstance(py_obj)
+            if hasattr(py_obj, '_objc_ptr'):
+                return ObjCInstance(py_obj)
+            
+            if PY3:
+                if isinstance(py_obj, str):
+                    return objc_util.NSString.stringWithUTF8String_(py_obj.encode('utf-8'))
+                if isinstance(py_obj, bytes):
+                    return objc_util.NSData.dataWithBytes_length_(py_obj, len(py_obj))
+            else:
+                if isinstance(py_obj, str):
+                    return objc_util.NSString.stringWithUTF8String_(py_obj)
+                if isinstance(py_obj, unicode):
+                    return objc_util.NSString.stringWithUTF8String_(py_obj.encode('utf-8'))
+                if isinstance(py_obj, bytearray):
+                    return objc_util.NSData.dataWithBytes_length_(str(py_obj), len(py_obj))
+            if isinstance(py_obj, int):
+                return objc_util.NSNumber.numberWithInt_(py_obj)
+            if isinstance(py_obj, float):
+                return objc_util.NSNumber.numberWithDouble_(py_obj)
+            if isinstance(py_obj, bool):
+                return objc_util.NSNumber.numberWithBool_(py_obj)
+            if isinstance(py_obj, list):
+                arr = objc_util.NSMutableArray.array()
+                for obj in py_obj:
+                    arr.addObject_(ns(obj))
+                return arr
+            if isinstance(py_obj, set):
+                s = objc_util.NSMutableSet.set()
+                for obj in py_obj:
+                    s.addObject_(ns(obj))
+                return s
+            if isinstance(py_obj, dict):
+                dct = objc_util.NSMutableDictionary.dictionary()
+                for key, value in (py_obj.items() if PY3 else py_obj.iteritems()):
+                    dct.setObject_forKey_(ns(value), ns(key))
+                return dct
+
+        def nsurl(url_or_path):
+            if not isinstance(url_or_path, basestring):
+                raise TypeError('expected a string')
+            if ':' in url_or_path:
+                return objc_util.NSURL.URLWithString_(ns(url_or_path))
+            return objc_util.NSURL.fileURLWithPath_(ns(url_or_path))
+
+        def nsdata_to_bytes(data):
+            if not isinstance(data, ObjCInstance) or not data.isKindOfClass_(objc_util.NSData):
+                raise TypeError('expected an NSData object')
+            _len = data.length()
+            if _len == 0:
+                return b''
+            ArrayType = ctypes.c_char * _len
+            buffer = ArrayType()
+            data.getBytes_length_(byref(buffer), _len)
+            return buffer[:_len]
+
+        def uiimage_to_png(img):
+            if not isinstance(img, ObjCInstance) or not img.isKindOfClass_(objc_util.UIImage):
+                raise TypeError('expected a UIImage object')
+            UIImagePNGRepresentation = objc_util.c.UIImagePNGRepresentation
+            UIImagePNGRepresentation.restype = c_void_p
+            UIImagePNGRepresentation.argtypes = [c_void_p]
+            data = ObjCInstance(UIImagePNGRepresentation(img))
+            return nsdata_to_bytes(data)
+
+        def retain_global(obj):
+            objc_util._retained_globals.append(obj)
+
+        def release_global(obj):
+            try:
+                objc_util._retained_globals.remove(obj)
+            except ValueError:
+                pass
+
+        def OMMainThreadDispatcher_invoke_imp(cmd):
+            if objc_util._tracefunc:
+                sys.settrace(objc_util._tracefunc)
+            self_instance = ObjCInstance(self)
+            func = self_instance.func
+            args = self_instance.args
+            kwargs = self_instance.kwargs
+            retval = func(*args, **kwargs)
+            self_instance.retval = retval
+
+        def on_main_thread(func):
+            if not callable(func):
+                raise TypeError('expected a callable')
+            @functools.wraps(func)
+            def new_func(*args, **kwargs):
+                if objc_util.NSThread.isMainThread(restype=c_bool, argtypes=[]):
+                    return func(*args, **kwargs)
+                dispatcher = OMMainThreadDispatcher.new()
+                dispatcher.func = func
+                dispatcher.args = args
+                dispatcher.kwargs = kwargs
+                dispatcher.retval = None
+                dispatcher.performSelectorOnMainThread_withObject_waitUntilDone_(sel('invoke'), None, True)
+                retval = dispatcher.retval
+                dispatcher.release()
+                return retval
+            return new_func
+
+        def _add_method(method, class_ptr, superclass, basename, protocols, is_classmethod=False):
+            if hasattr(method, 'selector'):
+                sel_name = method.selector
+            else:
+                method_name = method.__name__
+                if method_name.startswith(basename + '_'):
+                    method_name = method_name[len(basename)+1:]
+                sel_name = method_name.replace('_', ':')
+            type_encoding = None
+            if hasattr(method, 'encoding'):
+                type_encoding = method.encoding
+            else:
+                if is_classmethod:
+                    superclass_method = objc_util.class_getClassMethod(superclass, sel(sel_name))
+                else:
+                    superclass_method = objc_util.class_getInstanceMethod(superclass, sel(sel_name))
+                if superclass_method:
+                    type_encoding = objc_util.method_getTypeEncoding(superclass_method)
+                else:
+                    for protocol_name in protocols:
+                        if PY3 and isinstance(protocol_name, str):
+                            protocol_name = protocol_name.encode('ascii')
+                        protocol = objc_util.objc_getProtocol(protocol_name)
+                        if protocol:
+                            method_desc = objc_util.protocol_getMethodDescription(protocol, sel(sel_name), False, True)
+                            if not method_desc or not method_desc.types:
+                                method_desc = objc_util.protocol_getMethodDescription(protocol, sel(sel_name), True, True)
+                            if method_desc and method_desc.types:
+                                type_encoding = method_desc.types
+                                break
+                if not type_encoding:
+                    num_args = len(re.findall(':', sel_name))
+                    type_encoding = 'v%i@0:8%s' % (sizeof(c_void_p) * (num_args + 2), ''.join('@%i' % ((i+2) * sizeof(c_void_p),) for i in xrange(num_args)))
+                    
+            if hasattr(method, 'restype') and hasattr(method, 'argtypes'):
+                restype = method.restype
+                argtypes = [c_void_p, c_void_p] + method.argtypes
+            else:
+                parsed_types = parse_types(type_encoding)
+                restype = parsed_types[0]
+                argtypes = parsed_types[1]
+            argspec = inspect.getfullargspec(method)
+            if len(argspec.args) != len(argtypes):
+                raise ValueError('%s has %i arguments (expected %i)' % (method, len(argspec.args), len(argtypes)))
+            objc_util.IMPTYPE = ctypes.CFUNCTYPE(restype, *argtypes)
+            imp = objc_util.IMPTYPE(method)
+            retain_global(imp)
+            if PY3 and isinstance(type_encoding, str):
+                type_encoding = type_encoding.encode('ascii')
+            objc_util.class_addMethod(objc_util.class_ptr, sel(sel_name), imp, type_encoding)
+
+        def create_objc_class(name, superclass=objc_util.NSObject, methods=[], classmethods=[], protocols=[], debug=True):
+            basename = name
+            if debug:
+                suffix = 1
+                while True:
+                    try:
+                        existing_class = objc_util.ObjCClass(name)
+                        suffix += 1
+                        name = '%s_%i' % (basename, suffix)
+                    except ValueError:
+                        break
+            else:
+                try:
+                    existing_class = objc_util.ObjCClass(basename)
+                    return existing_class
+                except ValueError:
+                    pass
+            if PY3 and isinstance(name, str):
+                name = name.encode('ascii')    
+            class_ptr = objc_util.objc_allocateClassPair(superclass, name, 0)
+            
+            for method in methods:
+                _add_method(method, class_ptr, superclass, basename, protocols)
+            
+            objc_util.objc_registerClassPair(class_ptr)
+            
+            for method in classmethods:
+                metaclass = objc_util.object_getClass(class_ptr)
+                super_metaclass = objc_util.object_getClass(objc_util.class_getSuperclass(class_ptr))
+                _add_method(method, metaclass, super_metaclass, basename, [], True)
+            return objc_util.ObjCClass(name)
+
+        def settrace(func):
+            global _tracefunc
+            _tracefunc = func
+
+        def _objc_exception_handler(_exc):
+            exc = ObjCInstance(_exc)
+
+        @contextlib.contextmanager
+        def autoreleasepool():
+            pool = objc_util.ObjCClass('NSAutoreleasePool').new()
+            yield
+            pool.drain()
+
+class Artifacter(object):
+    def __init__(self, uid):
+        self.uid = uid
+        self.ArtifactFont = ArtifactFont
+        self.artifact_assets = artifact_assets
+        self.artifact_base_image = artifact_base_image
+        self.artifact_emotes = artifact_emotes
+        self.artifact_rarelity = artifact_rarelity
+        self.artifact_constellation = artifact_constellation
+        self.artifact_grades = artifact_grades
+
+        concurrent.futures.ThreadPoolExecutor().submit(self.Initialization).result()
+
+    def Initialization(self):
+        self.locale_jp = concurrent.futures.ThreadPoolExecutor().submit(self.locale).result()  # データの表記名データをEnka.Network公式Githubから取得
+        self.characters_json = concurrent.futures.ThreadPoolExecutor().submit(self.character_json).result()  # キャラクターデータをEnka.Network公式Githubから取得
+        self.costumes = concurrent.futures.ThreadPoolExecutor().submit(self.costume_json).result()
+        try:
+            self.player_data = json.loads(urllib.request.urlopen(urllib.request.Request('https://enka.network/api/uid/{}'.format(self.UIDs.text()), headers={'User-Agent': UsrAgn})).read().decode(errors='ignore'))
+        except Exception:
+            self.player_data = {}
+
+    def mainoption(self): # 聖遺物のメインオプション情報
+            return {"会心ダメージ": {
+                "21.8": [[6.2, 7.8, 7.8], [5.4, 5.4, 5.4, 5.4]],
+                "22.5": [[7.0, 7.8, 7.8], [5.4, 5.4, 5.4, 6.2]],
+                "23.3": [[7.8, 7.8, 7.8], [5.4, 5.4, 5.4, 7.0]],
+                "27.2": [[5.4, 6.2, 7.8, 7.8], [5.4, 5.4, 5.4, 5.4, 5.4]],
+                "28.0": [[5.4, 7.0, 7.8, 7.8], [5.4, 5.4, 5.4, 5.4, 6.2]],
+                "28.8": [[5.4, 7.8, 7.8, 7.8], [5.4, 5.4, 5.4, 5.4, 7.0]],
+                "29.5": [[6.2, 7.8, 7.8, 7.8], [5.4, 5.4, 5.4, 5.4, 7.8]],
+                "30.3": [[7.0, 7.8, 7.8, 7.8], [5.4, 5.4, 5.4, 6.2, 7.8]],
+                "31.1": [[7.8, 7.8, 7.8, 7.8], [5.4, 5.4, 5.4, 7.0, 7.8]],
+                "32.6": [[5.4, 5.4, 6.2, 7.8, 7.8], [5.4, 5.4, 5.4, 5.4, 5.4, 5.4]],
+                "33.4": [[5.4, 5.4, 7.0, 7.8, 7.8], [5.4, 5.4, 5.4, 5.4, 5.4, 6.2]],
+                "34.2": [[5.4, 5.4, 7.8, 7.8, 7.8], [5.4, 5.4, 5.4, 5.4, 5.4, 7.0]],
+                "35.0": [[5.4, 6.2, 7.8, 7.8, 7.8], [5.4, 5.4, 5.4, 5.4, 5.4, 7.8]],
+                "35.7": [[5.4, 7.0, 7.8, 7.8, 7.8], [5.4, 5.4, 5.4, 5.4, 7.0, 7.0]],
+                "36.5": [[5.4, 7.8, 7.8, 7.8, 7.8], [5.4, 5.4, 5.4, 5.4, 7.0, 7.8]],
+                "35.8": [[6.2, 6.2, 7.8, 7.8, 7.8], [5.4, 5.4, 5.4, 5.4, 6.2, 7.8]],
+                "37.3": [[6.2, 7.8, 7.8, 7.8, 7.8], [5.4, 5.4, 5.4, 5.4, 7.8, 7.8]],
+                "38.1": [[7.0, 7.8, 7.8, 7.8, 7.8], [5.4, 5.4, 5.4, 6.2, 7.8, 7.8]],
+                "38.8": [[7.8, 7.8, 7.8, 7.8, 7.8], [5.4, 5.4, 7.0, 7.0, 7.0, 7.0]],
+                "ov": ["21.8", "22.5", "23.3", "27.2", "28.0", "28.8", "29.5", "30.3", "31.1", "32.6", "33.4", "34.2", "35.0", "35.7", "36.5", "35.8", "37.3", "38.1", "38.8"]
+            },
+                "会心率": {
+                    "10.9": [[3.1, 3.9, 3.9], [2.7, 2.7, 2.7, 2.7]],
+                    "11.3": [[3.5, 3.9, 3.9], [2.7, 2.7, 2.7, 3.1]],
+                    "11.7": [[3.9, 3.9, 3.9], [2.7, 2.7, 2.7, 3.5]],
+                    "13.6": [[2.7, 3.1, 3.9, 3.9], [2.7, 2.7, 2.7, 2.7, 2.7]],
+                    "14.0": [[2.7, 3.5, 3.9, 3.9], [2.7, 2.7, 2.7, 2.7, 3.1]],
+                    "14.4": [[2.7, 3.9, 3.9, 3.9], [2.7, 2.7, 2.7, 2.7, 3.5]],
+                    "14.8": [[3.1, 3.9, 3.9, 3.9], [2.7, 2.7, 2.7, 2.7, 3.9]],
+                    "15.2": [[3.5, 3.9, 3.9, 3.9], [2.7, 2.7, 2.7, 3.1, 3.9]],
+                    "15.6": [[3.9, 3.9, 3.9, 3.9], [2.7, 2.7, 2.7, 3.5, 3.9]],
+                    "16.3": [[2.7, 2.7, 3.1, 3.9, 3.9], [2.7, 2.7, 2.7, 2.7, 2.7, 2.7]],
+                    "16.7": [[2.7, 2.7, 3.5, 3.9, 3.9], [2.7, 2.7, 2.7, 2.7, 2.7, 3.1]],
+                    "17.1": [[2.7, 2.7, 3.9, 3.9, 3.9], [2.7, 2.7, 2.7, 2.7, 2.7, 3.5]],
+                    "17.5": [[2.7, 3.1, 3.9, 3.9, 3.9], [2.7, 2.7, 2.7, 2.7, 2.7, 3.9]],
+                    "17.9": [[2.7, 3.5, 3.9, 3.9, 3.9], [2.7, 2.7, 2.7, 2.7, 3.1, 3.9]],
+                    "18.3": [[2.7, 3.9, 3.9, 3.9, 3.9], [2.7, 2.7, 2.7, 2.7, 3.5, 3.9]],
+                    "18.7": [[3.1, 3.9, 3.9, 3.9, 3.9], [2.7, 2.7, 2.7, 2.7, 3.9, 3.9]],
+                    "19.1": [[3.5, 3.9, 3.9, 3.9, 3.9], [2.7, 2.7, 2.7, 3.1, 3.9, 3.9]],
+                    "ov": ["10.9", "11.3", "11.7", "13.6", "14.0", "14.4", "14.8", "15.2", "15.6", "16.3", "16.7", "17.1", "17.5", "17.9", "18.3", "18.7", "19.1"]
+                },
+                "元素チャージ効率": {
+                    "18.1": [[5.2, 6.5, 6.5], [4.5, 4.5, 4.5, 4.5]],
+                    "18.8": [[5.8, 6.5, 6.5], [4.5, 4.5, 4.5, 5.2]],
+                    "19.4": [[6.5, 6.5, 6.5], [4.5, 4.5, 4.5, 5.8]],
+                    "22.7": [[4.5, 5.2, 6.5, 6.5], [4.5, 4.5, 4.5, 4.5, 4.5]],
+                    "23.3": [[4.5, 5.8, 6.5, 6.5], [4.5, 4.5, 4.5, 4.5, 5.2]],
+                    "24.0": [[4.5, 6.5, 6.5, 6.5], [4.5, 4.5, 4.5, 4.5, 5.8]],
+                    "24.6": [[5.2, 6.5, 6.5, 6.5], [4.5, 4.5, 4.5, 4.5, 6.5]],
+                    "25.3": [[5.8, 6.5, 6.5, 6.5], [4.5, 4.5, 4.5, 5.2, 6.5]],
+                    "25.9": [[6.5, 6.5, 6.5, 6.5], [4.5, 4.5, 4.5, 5.8, 6.5]],
+                    "27.2": [[4.5, 4.5, 5.2, 6.5, 6.5], [4.5, 4.5, 4.5, 4.5, 4.5, 4.5]],
+                    "28.5": [[4.5, 4.5, 6.5, 6.5, 6.5], [4.5, 4.5, 4.5, 4.5, 4.5, 5.8]],
+                    "27.8": [[4.5, 5.8, 5.8, 5.8, 5.8], [4.5, 4.5, 4.5, 4.5, 4.5, 5.2]],
+                    "29.8": [[4.5, 5.8, 6.5, 6.5, 6.5], [4.5, 4.5, 4.5, 4.5, 5.2, 6.5]],
+                    "31.1": [[5.2, 6.5, 6.5, 6.5, 6.5], [4.5, 4.5, 4.5, 4.5, 6.5, 6.5]],
+                    "32.4": [[6.5, 6.5, 6.5, 6.5, 6.5], [4.5, 4.5, 4.5, 5.8, 6.5, 6.5]],
+                    "ov": ["18.1", "18.8", "19.4", "22.7", "23.3", "24.0", "24.6", "25.3", "25.9", "27.2", "28.5", "27.8", "29.8", "31.1", "32.4"]
+                },
+                "防御パーセンテージ": {
+                    "20.4": [[5.8, 7.3, 7.3], [5.1, 5.1, 5.1, 5.1]],
+                    "21.1": [[6.6, 7.3, 7.3], [5.1, 5.1, 5.1, 5.8]],
+                    "21.9": [[7.3, 7.3, 7.3], [5.1, 5.1, 5.1, 6.6]],
+                    "25.5": [[5.1, 5.8, 7.3, 7.3], [5.1, 5.1, 5.1, 5.1, 5.1]],
+                    "26.2": [[5.1, 6.6, 7.3, 7.3], [5.1, 5.1, 5.1, 5.1, 5.8]],
+                    "27.0": [[5.1, 7.3, 7.3, 7.3], [5.1, 5.1, 5.1, 5.1, 6.6]],
+                    "27.7": [[5.8, 7.3, 7.3, 7.3], [5.1, 5.1, 5.1, 5.1, 7.3]],
+                    "28.4": [[6.6, 7.3, 7.3, 7.3], [5.1, 5.1, 5.1, 5.8, 7.3]],
+                    "29.2": [[7.3, 7.3, 7.3, 7.3], [5.1, 5.1, 5.1, 6.6, 7.3]],
+                    "30.6": [[5.1, 5.1, 5.8, 7.3, 7.3], [5.1, 5.1, 5.1, 5.1, 5.1, 5.1]],
+                    "31.3": [[5.1, 5.1, 6.6, 7.3, 7.3], [5.1, 5.1, 5.1, 5.1, 5.1, 5.8]],
+                    "32.1": [[5.1, 5.1, 7.3, 7.3, 7.3], [5.1, 5.1, 5.1, 5.1, 5.1, 6.6]],
+                    "32.8": [[5.1, 5.8, 7.3, 7.3, 7.3], [5.1, 5.1, 5.1, 5.1, 5.1, 7.3]],
+                    "33.5": [[5.1, 6.6, 7.3, 7.3, 7.3], [5.1, 5.1, 5.1, 5.1, 5.8, 7.3]],
+                    "34.3": [[5.1, 7.3, 7.3, 7.3, 7.3], [5.1, 5.1, 5.1, 5.1, 6.6, 7.3]],
+                    "35.0": [[5.8, 7.3, 7.3, 7.3, 7.3], [5.1, 5.1, 5.1, 5.1, 7.3, 7.3]],
+                    "35.7": [[6.6, 7.3, 7.3, 7.3, 7.3], [5.1, 5.1, 5.1, 5.8, 7.3, 7.3]],
+                    "ov": ["20.4", "21.1", "21.9", "25.5", "26.2", "27.0", "27.7", "28.4", "29.2", "30.6", "31.3", "32.1", "32.8", "33.5", "34.3", "35.0", "35.7"]
+                },
+                "攻撃パーセンテージ": {
+                    "16.3": [[4.7, 5.8, 5.8], [4.1, 4.1, 4.1, 4.1]],
+                    "16.9": [[5.3, 5.8, 5.8], [4.1, 4.1, 4.1, 4.7]],
+                    "17.5": [[5.8, 5.8, 5.8], [4.1, 4.1, 4.1, 5.3]],
+                    "20.4": [[4.1, 4.7, 5.8, 5.8], [4.1, 4.1, 4.1, 4.1, 4.1]],
+                    "21.0": [[4.1, 5.3, 5.8, 5.8], [4.1, 4.1, 4.1, 4.1, 4.7]],
+                    "21.6": [[4.1, 5.8, 5.8, 5.8], [4.1, 4.1, 4.1, 4.1, 5.3]],
+                    "22.2": [[4.7, 5.8, 5.8, 5.8], [4.1, 4.1, 4.1, 4.1, 5.8]],
+                    "22.7": [[5.3, 5.8, 5.8, 5.8], [4.1, 4.1, 4.1, 4.7, 5.8]],
+                    "23.3": [[5.8, 5.8, 5.8, 5.8], [4.1, 4.1, 4.1, 5.3, 5.8]],
+                    "24.5": [[4.1, 4.1, 4.7, 5.8, 5.8], [4.1, 4.1, 4.1, 4.1, 4.1, 4.1]],
+                    "25.1": [[4.1, 4.1, 5.3, 5.8, 5.8], [4.1, 4.1, 4.1, 4.1, 4.1, 4.7]],
+                    "25.7": [[4.1, 4.1, 5.8, 5.8, 5.8], [4.1, 4.1, 4.1, 4.1, 4.1, 5.3]],
+                    "26.2": [[4.1, 4.7, 5.8, 5.8, 5.8], [4.1, 4.1, 4.1, 4.1, 4.1, 5.8]],
+                    "26.8": [[4.1, 5.3, 5.8, 5.8, 5.8], [4.1, 4.1, 4.1, 4.1, 4.7, 5.8]],
+                    "27.4": [[4.1, 5.8, 5.8, 5.8, 5.8], [4.1, 4.1, 4.1, 4.1, 5.3, 5.8]],
+                    "25.6": [[4.7, 4.7, 4.7, 5.8, 5.8], [4.1, 4.1, 4.1, 4.1, 4.7, 4.7]],
+                    "28.0": [[4.7, 5.8, 5.8, 5.8, 5.8], [4.1, 4.1, 4.1, 4.1, 5.8, 5.8]],
+                    "28.6": [[5.3, 5.8, 5.8, 5.8, 5.8], [4.1, 4.1, 4.1, 4.7, 5.8, 5.8]],
+                    "29.2": [[5.8, 5.8, 5.8, 5.8, 5.8], [4.1, 4.1, 4.1, 5.3, 5.8, 5.8]],
+                    "ov": ["16.3", "16.9", "17.5", "20.4", "21.0", "21.6", "22.2", "22.7", "23.3", "24.5", "25.1", "25.7", "26.2", "26.8", "27.4", "25.6", "28.0", "28.6", "29.2"]
+                },
+                "HPパーセンテージ": {
+                    "16.3": [[4.7, 5.8, 5.8], [4.1, 4.1, 4.1, 4.1]],
+                    "16.9": [[5.3, 5.8, 5.8], [4.1, 4.1, 4.1, 4.7]],
+                    "17.5": [[5.8, 5.8, 5.8], [4.1, 4.1, 4.1, 5.3]],
+                    "20.4": [[4.1, 4.7, 5.8, 5.8], [4.1, 4.1, 4.1, 4.1, 4.1]],
+                    "21.0": [[4.1, 5.3, 5.8, 5.8], [4.1, 4.1, 4.1, 4.1, 4.7]],
+                    "21.6": [[4.1, 5.8, 5.8, 5.8], [4.1, 4.1, 4.1, 4.1, 5.3]],
+                    "22.2": [[4.7, 5.8, 5.8, 5.8], [4.1, 4.1, 4.1, 4.1, 5.8]],
+                    "22.7": [[5.3, 5.8, 5.8, 5.8], [4.1, 4.1, 4.1, 4.7, 5.8]],
+                    "23.3": [[5.8, 5.8, 5.8, 5.8], [4.1, 4.1, 4.1, 5.3, 5.8]],
+                    "24.5": [[4.1, 4.1, 4.7, 5.8, 5.8], [4.1, 4.1, 4.1, 4.1, 4.1, 4.1]],
+                    "25.1": [[4.1, 4.1, 5.3, 5.8, 5.8], [4.1, 4.1, 4.1, 4.1, 4.1, 4.7]],
+                    "25.7": [[4.1, 4.1, 5.8, 5.8, 5.8], [4.1, 4.1, 4.1, 4.1, 4.1, 5.3]],
+                    "26.2": [[4.1, 4.7, 5.8, 5.8, 5.8], [4.1, 4.1, 4.1, 4.1, 4.1, 5.8]],
+                    "26.8": [[4.1, 5.3, 5.8, 5.8, 5.8], [4.1, 4.1, 4.1, 4.1, 4.7, 5.8]],
+                    "27.4": [[4.1, 5.8, 5.8, 5.8, 5.8], [4.1, 4.1, 4.1, 4.1, 5.3, 5.8]],
+                    "25.6": [[4.7, 4.7, 4.7, 5.8, 5.8], [4.1, 4.1, 4.1, 4.1, 4.7, 4.7]],
+                    "28.0": [[4.7, 5.8, 5.8, 5.8, 5.8], [4.1, 4.1, 4.1, 4.1, 5.8, 5.8]],
+                    "28.6": [[5.3, 5.8, 5.8, 5.8, 5.8], [4.1, 4.1, 4.1, 4.7, 5.8, 5.8]],
+                    "29.2": [[5.8, 5.8, 5.8, 5.8, 5.8], [4.1, 4.1, 4.1, 5.3, 5.8, 5.8]],
+                    "ov": ["16.3", "16.9", "17.5", "20.4", "21.0", "21.6", "22.2", "22.7", "23.3", "24.5", "25.1", "25.7", "26.2", "26.8", "27.4", "25.6", "28.0", "28.6", "29.2"]
+                },
+                "HP": {
+                    "837": [[239, 299, 299], [209, 209, 209, 209]],
+                    "866": [[269, 299, 299], [209, 209, 209, 239]],
+                    "896": [[299, 299, 299], [209, 209, 209, 269]],
+                    "1046": [[209, 239, 299, 299], [209, 209, 209, 209, 209]],
+                    "1076": [[209, 269, 299, 299], [209, 209, 209, 209, 239]],
+                    "1105": [[209, 299, 299, 299], [209, 209, 209, 209, 269]],
+                    "1135": [[239, 299, 299, 299], [209, 209, 209, 209, 299]],
+                    "1165": [[269, 299, 299, 299], [209, 209, 209, 239, 299]],
+                    "1195": [[299, 299, 299, 299], [209, 209, 209, 269, 299]],
+                    "1255": [[209, 209, 239, 299, 299], [209, 209, 209, 209, 209, 209]],
+                    "1285": [[209, 209, 269, 299, 299], [209, 209, 209, 209, 209, 239]],
+                    "1315": [[209, 209, 299, 299, 299], [209, 209, 209, 209, 209, 269]],
+                    "1344": [[209, 239, 299, 299, 299], [209, 209, 209, 209, 209, 299]],
+                    "1374": [[209, 269, 299, 299, 299], [209, 209, 209, 209, 239, 299]],
+                    "1404": [[209, 299, 299, 299, 299], [209, 209, 209, 209, 269, 299]],
+                    "1434": [[239, 299, 299, 299, 299], [209, 209, 209, 209, 299, 299]],
+                    "1464": [[269, 299, 299, 299, 299], [209, 209, 209, 239, 299, 299]],
+                    "1494": [[299, 299, 299, 299, 299], [209, 209, 209, 269, 299, 299]],
+                    "ov": ["837", "866", "896", "1046", "1076", "1105", "1135", "1165", "1195", "1255", "1285", "1315", "1344", "1374", "1404", "1434", "1464", "1494"]
+                },
+                "攻撃力": {
+                    "54": [[16, 19, 19], [14, 14, 14, 14]],
+                    "56": [[18, 19, 19], [14, 14, 14, 16]],
+                    "58": [[19, 19, 19], [14, 14, 14, 18]],
+                    "68": [[14, 16, 19, 19], [14, 14, 14, 14, 14]],
+                    "70": [[14, 18, 19, 19], [14, 14, 14, 14, 16]],
+                    "72": [[14, 19, 19, 19], [14, 14, 14, 14, 18]],
+                    "74": [[16, 19, 19, 19], [14, 14, 14, 14, 19]],
+                    "76": [[18, 19, 19, 19], [14, 14, 14, 16, 19]],
+                    "78": [[19, 19, 19, 19], [14, 14, 14, 18, 19]],
+                    "82": [[14, 14, 16, 19, 19], [14, 14, 14, 14, 14, 14]],
+                    "84": [[14, 14, 18, 19, 19], [14, 14, 14, 14, 14, 16]],
+                    "86": [[14, 14, 19, 19, 19], [14, 14, 14, 14, 14, 18]],
+                    "88": [[14, 16, 19, 19, 19], [14, 14, 14, 14, 14, 19]],
+                    "89": [[14, 18, 19, 19, 19], [14, 14, 14, 14, 16, 19]],
+                    "91": [[14, 19, 19, 19, 19], [14, 14, 14, 14, 18, 19]],
+                    "93": [[16, 19, 19, 19, 19], [14, 14, 14, 14, 19, 19]],
+                    "95": [[18, 19, 19, 19, 19], [14, 14, 14, 16, 19, 19]],
+                    "97": [[19, 19, 19, 19, 19], [14, 14, 14, 18, 19, 19]],
+                    "ov": ["54", "56", "58", "68", "70", "72", "74", "76", "78", "82", "84", "86", "88", "89", "91", "93", "95", "97"]
+                },
+                "防御力": {
+                    "65": [[19, 23, 23], [16, 16, 16, 16]],
+                    "67": [[21, 23, 23], [16, 16, 16, 19]],
+                    "69": [[23, 23, 23], [16, 16, 16, 21]],
+                    "81": [[16, 19, 23, 23], [16, 16, 16, 16, 16]],
+                    "83": [[16, 21, 23, 23], [16, 16, 16, 16, 19]],
+                    "86": [[16, 23, 23, 23], [16, 16, 16, 16, 21]],
+                    "88": [[19, 23, 23, 23], [16, 16, 16, 16, 23]],
+                    "90": [[21, 23, 23, 23], [16, 16, 16, 19, 23]],
+                    "93": [[23, 23, 23, 23], [16, 16, 16, 21, 23]],
+                    "97": [[16, 16, 19, 23, 23], [16, 16, 16, 16, 16, 16]],
+                    "100": [[16, 16, 21, 23, 23], [16, 16, 16, 16, 16, 19]],
+                    "102": [[16, 16, 23, 23, 23], [16, 16, 16, 16, 16, 21]],
+                    "104": [[16, 19, 23, 23, 23], [16, 16, 16, 16, 16, 23]],
+                    "106": [[16, 21, 23, 23, 23], [16, 16, 16, 16, 19, 23]],
+                    "109": [[16, 23, 23, 23, 23], [16, 16, 16, 16, 21, 23]],
+                    "111": [[19, 23, 23, 23, 23], [16, 16, 16, 16, 23, 23]],
+                    "113": [[21, 23, 23, 23, 23], [16, 16, 16, 19, 23, 23]],
+                    "116": [[23, 23, 23, 23, 23], [16, 16, 16, 21, 23, 23]],
+                    "ov": ["65", "67", "69", "81", "83", "86", "88", "90", "93", "97", "100", "102", "104", "106", "109", "111", "113", "116"]
+                },
+                "元素熟知": {
+                    "65": [[19, 23, 23], [16, 16, 16, 16]],
+                    "68": [[21, 23, 23], [16, 16, 16, 19]],
+                    "70": [[23, 23, 23], [16, 16, 16, 21]],
+                    "82": [[16, 19, 23, 23], [16, 16, 16, 16, 16]],
+                    "84": [[16, 21, 23, 23], [16, 16, 16, 16, 19]],
+                    "86": [[16, 23, 23, 23], [16, 16, 16, 16, 21]],
+                    "89": [[19, 23, 23, 23], [16, 16, 16, 16, 23]],
+                    "91": [[21, 23, 23, 23], [16, 16, 16, 19, 23]],
+                    "93": [[23, 23, 23, 23], [16, 16, 16, 21, 23]],
+                    "98": [[16, 16, 19, 23, 23], [16, 16, 16, 16, 16, 16]],
+                    "100": [[16, 16, 21, 23, 23], [16, 16, 16, 16, 16, 19]],
+                    "103": [[16, 16, 23, 23, 23], [16, 16, 16, 16, 16, 21]],
+                    "105": [[16, 19, 23, 23, 23], [16, 16, 16, 16, 16, 23]],
+                    "107": [[16, 21, 23, 23, 23], [16, 16, 16, 16, 19, 23]],
+                    "110": [[16, 23, 23, 23, 23], [16, 16, 16, 16, 21, 23]],
+                    "112": [[19, 23, 23, 23, 23], [16, 16, 16, 16, 23, 23]],
+                    "114": [[21, 23, 23, 23, 23], [16, 16, 16, 19, 23, 23]],
+                    "117": [[23, 23, 23, 23, 23], [16, 16, 16, 21, 23, 23]],
+                    "ov": ["65", "68", "70", "82", "84", "86", "89", "91", "93", "98", "100", "103", "105", "107", "110", "112", "114", "117"]
+                }
+            }
+
+    def suboption(self): # 聖遺物のサブオプション情報
+            return {
+                "会心ダメージ": {
+                    "5.4": [5.4],
+                    "6.2": [6.2],
+                    "7.0": [7.0],
+                    "7.8": [7.8],
+                    "10.9": [5.4, 5.4],
+                    "11.7": [5.4, 6.2],
+                    "12.4": [5.4, 7.0],
+                    "13.2": [5.4, 7.8],
+                    "14.0": [6.2, 7.8],
+                    "14.8": [7.0, 7.8],
+                    "15.5": [7.8, 7.8],
+                    "16.3": [5.4, 5.4, 5.4],
+                    "17.1": [5.4, 5.4, 6.2],
+                    "17.9": [5.4, 5.4, 7.0],
+                    "18.7": [5.4, 5.4, 7.8],
+                    "19.4": [5.4, 6.2, 7.8],
+                    "20.2": [5.4, 7.0, 7.8],
+                    "21.0": [5.4, 7.8, 7.8],
+                    "21.8": [5.4, 5.4, 5.4, 5.4],
+                    "22.5": [5.4, 5.4, 5.4, 6.2],
+                    "23.3": [5.4, 5.4, 5.4, 7.0],
+                    "24.1": [5.4, 5.4, 5.4, 7.8],
+                    "24.9": [5.4, 5.4, 6.2, 7.8],
+                    "25.6": [5.4, 5.4, 7.0, 7.8],
+                    "26.4": [5.4, 5.4, 7.8, 7.8],
+                    "25.7": [5.4, 6.2, 6.2, 7.8],
+                    "27.2": [5.4, 5.4, 5.4, 5.4, 5.4],
+                    "28.0": [5.4, 5.4, 5.4, 5.4, 6.2],
+                    "28.8": [5.4, 5.4, 5.4, 5.4, 7.0],
+                    "28.7": [7.0, 7.0, 7.0, 7.8],
+                    "29.5": [5.4, 5.4, 5.4, 5.4, 7.8],
+                    "30.3": [5.4, 5.4, 5.4, 6.2, 7.8],
+                    "31.1": [5.4, 5.4, 5.4, 7.0, 7.8],
+                    "31.9": [5.4, 5.4, 5.4, 7.8, 7.8],
+                    "32.6": [5.4, 5.4, 5.4, 5.4, 5.4, 5.4],
+                    "33.4": [5.4, 5.4, 5.4, 5.4, 5.4, 6.2],
+                    "34.2": [5.4, 5.4, 5.4, 5.4, 5.4, 7.0],
+                    "35.0": [5.4, 5.4, 5.4, 5.4, 5.4, 7.8],
+                    "35.7": [5.4, 5.4, 5.4, 5.4, 7.0, 7.0],
+                    "36.5": [5.4, 5.4, 5.4, 5.4, 7.0, 7.8],
+                    "32.7": [6.2, 6.2, 6.2, 6.2, 7.8],
+                    "35.8": [5.4, 5.4, 5.4, 5.4, 6.2, 7.8],
+                    "37.3": [5.4, 5.4, 5.4, 5.4, 7.8, 7.8],
+                    "38.1": [5.4, 5.4, 5.4, 6.2, 7.8, 7.8],
+                    "38.8": [5.4, 5.4, 5.4, 7.0, 7.8, 7.8],
+                    "38.9": [5.4, 5.4, 5.4, 7.0, 7.8, 7.8],
+                    "39.6": [5.4, 5.4, 5.4, 7.8, 7.8, 7.8],
+                    "40.4": [5.4, 5.4, 6.2, 7.8, 7.8, 7.8],
+                    "41.2": [5.4, 5.4, 7.0, 7.8, 7.8, 7.8],
+                    "42.0": [5.4, 5.4, 7.8, 7.8, 7.8, 7.8],
+                    "42.7": [5.4, 6.2, 7.8, 7.8, 7.8, 7.8],
+                    "41.9": [5.4, 7.0, 7.0, 7.0, 7.8, 7.8],
+                    "43.5": [5.4, 7.0, 7.8, 7.8, 7.8, 7.8],
+                    "44.3": [5.4, 7.8, 7.8, 7.8, 7.8, 7.8],
+                    "45.1": [6.2, 7.8, 7.8, 7.8, 7.8, 7.8],
+                    "45.8": [7.0, 7.8, 7.8, 7.8, 7.8, 7.8],
+                    "46.6": [7.8, 7.8, 7.8, 7.8, 7.8, 7.8]
+                },
+                "会心率": {
+                    "2.7": [2.7],
+                    "3.1": [3.1],
+                    "3.5": [3.5],
+                    "3.9": [3.9],
+                    "5.4": [2.7, 2.7],
+                    "5.8": [2.7, 3.1],
+                    "6.2": [2.7, 3.5],
+                    "6.6": [2.7, 3.9],
+                    "7.0": [3.1, 3.9],
+                    "7.4": [3.5, 3.9],
+                    "7.8": [3.9, 3.9],
+                    "8.2": [2.7, 2.7, 2.7],
+                    "8.6": [2.7, 2.7, 3.1],
+                    "8.9": [2.7, 2.7, 3.5],
+                    "9.3": [2.7, 2.7, 3.9],
+                    "9.7": [2.7, 3.1, 3.9],
+                    "10.1": [2.7, 3.5, 3.9],
+                    "10.5": [2.7, 3.9, 3.9],
+                    "10.9": [2.7, 2.7, 2.7, 2.7],
+                    "11.3": [2.7, 2.7, 2.7, 3.1],
+                    "11.7": [2.7, 2.7, 2.7, 3.5],
+                    "12.1": [2.7, 2.7, 2.7, 3.9],
+                    "12.4": [2.7, 2.7, 3.1, 3.9],
+                    "12.8": [2.7, 2.7, 3.5, 3.9],
+                    "13.2": [2.7, 2.7, 3.9, 3.9],
+                    "12.0": [2.7, 3.1, 3.1, 3.1],
+                    "13.6": [2.7, 2.7, 2.7, 2.7, 2.7],
+                    "14.0": [2.7, 2.7, 2.7, 2.7, 3.1],
+                    "14.4": [2.7, 2.7, 2.7, 2.7, 3.5],
+                    "14.8": [2.7, 2.7, 2.7, 2.7, 3.9],
+                    "15.2": [2.7, 2.7, 2.7, 3.1, 3.9],
+                    "15.6": [2.7, 2.7, 2.7, 3.5, 3.9],
+                    "15.9": [2.7, 2.7, 2.7, 3.9, 3.9],
+                    "16.3": [2.7, 2.7, 2.7, 2.7, 2.7, 2.7],
+                    "16.7": [2.7, 2.7, 2.7, 2.7, 2.7, 3.1],
+                    "15.5": [2.7, 2.7, 3.1, 3.1, 3.9],
+                    "17.1": [2.7, 2.7, 2.7, 2.7, 2.7, 3.5],
+                    "17.5": [2.7, 2.7, 2.7, 2.7, 2.7, 3.9],
+                    "17.9": [2.7, 2.7, 2.7, 2.7, 3.1, 3.9],
+                    "18.3": [2.7, 2.7, 2.7, 2.7, 3.5, 3.9],
+                    "18.7": [2.7, 2.7, 2.7, 2.7, 3.9, 3.9],
+                    "19.1": [2.7, 2.7, 2.7, 3.1, 3.9, 3.9],
+                    "19.5": [3.9, 3.9, 3.9, 3.9, 3.9],
+                    "19.4": [2.7, 2.7, 2.7, 3.5, 3.9, 3.9],
+                    "19.8": [2.7, 2.7, 2.7, 3.9, 3.9, 3.9],
+                    "20.2": [2.7, 2.7, 3.1, 3.9, 3.9, 3.9],
+                    "20.6": [2.7, 2.7, 3.5, 3.9, 3.9, 3.9],
+                    "19.0": [2.7, 2.7, 2.7, 3.1, 3.9, 3.9],
+                    "21.0": [2.7, 2.7, 3.9, 3.9, 3.9, 3.9],
+                    "21.4": [2.7, 3.1, 3.9, 3.9, 3.9, 3.9],
+                    "21.8": [2.7, 3.5, 3.9, 3.9, 3.9, 3.9],
+                    "22.2": [2.7, 3.9, 3.9, 3.9, 3.9, 3.9],
+                    "22.6": [3.1, 3.9, 3.9, 3.9, 3.9, 3.9],
+                    "23.0": [3.5, 3.9, 3.9, 3.9, 3.9, 3.9],
+                    "23.3": [3.9, 3.9, 3.9, 3.9, 3.9, 3.9]
+                },
+                "元素チャージ効率": {
+                    "4.5": [4.5],
+                    "5.2": [5.2],
+                    "5.8": [5.8],
+                    "6.5": [6.5],
+                    "9.1": [4.5, 4.5],
+                    "9.7": [4.5, 5.2],
+                    "10.4": [4.5, 5.8],
+                    "11.0": [4.5, 6.5],
+                    "11.7": [5.2, 6.5],
+                    "12.3": [5.8, 6.5],
+                    "13.0": [6.5, 6.5],
+                    "13.6": [4.5, 4.5, 4.5],
+                    "14.2": [4.5, 4.5, 5.2],
+                    "14.9": [4.5, 4.5, 5.8],
+                    "15.5": [4.5, 4.5, 6.5],
+                    "16.2": [4.5, 5.2, 6.5],
+                    "16.8": [4.5, 5.8, 6.5],
+                    "17.5": [4.5, 6.5, 6.5],
+                    "18.1": [4.5, 4.5, 4.5, 4.5],
+                    "18.8": [4.5, 4.5, 4.5, 5.2],
+                    "19.4": [4.5, 4.5, 4.5, 5.8],
+                    "20.1": [4.5, 4.5, 4.5, 6.5],
+                    "20.7": [4.5, 4.5, 5.2, 6.5],
+                    "21.4": [4.5, 4.5, 5.8, 6.5],
+                    "22.0": [4.5, 4.5, 6.5, 6.5],
+                    "22.7": [4.5, 4.5, 4.5, 4.5, 4.5],
+                    "23.3": [4.5, 4.5, 4.5, 4.5, 5.2],
+                    "24.0": [4.5, 4.5, 4.5, 4.5, 5.8],
+                    "24.6": [4.5, 4.5, 4.5, 4.5, 6.5],
+                    "25.3": [4.5, 4.5, 4.5, 5.2, 6.5],
+                    "25.9": [4.5, 4.5, 4.5, 5.8, 6.5],
+                    "26.6": [4.5, 4.5, 4.5, 6.5, 6.5],
+                    "26.5": [4.5, 5.2, 5.2, 5.8, 5.8],
+                    "27.2": [4.5, 4.5, 4.5, 4.5, 4.5, 4.5],
+                    "27.9": [4.5, 4.5, 5.8, 6.5, 6.5],
+                    "28.5": [4.5, 4.5, 4.5, 4.5, 4.5, 5.8],
+                    "29.2": [4.5, 5.2, 6.5, 6.5, 6.5],
+                    "27.8": [4.5, 4.5, 4.5, 4.5, 4.5, 5.2],
+                    "29.8": [4.5, 4.5, 4.5, 4.5, 5.2, 6.5],
+                    "30.5": [4.5, 6.5, 6.5, 6.5, 6.5],
+                    "31.1": [4.5, 4.5, 4.5, 4.5, 6.5, 6.5],
+                    "30.4": [4.5, 4.5, 4.5, 4.5, 5.8, 6.5],
+                    "31.8": [5.8, 6.5, 6.5, 6.5, 6.5],
+                    "32.4": [4.5, 4.5, 4.5, 5.8, 6.5, 6.5],
+                    "29.1": [4.5, 4.5, 4.5, 4.5, 4.5, 6.5],
+                    "31.7": [4.5, 4.5, 4.5, 5.2, 6.5, 6.5],
+                    "33.0": [4.5, 4.5, 4.5, 6.5, 6.5, 6.5],
+                    "33.7": [4.5, 4.5, 5.2, 6.5, 6.5, 6.5],
+                    "34.3": [4.5, 4.5, 5.8, 6.5, 6.5, 6.5],
+                    "35.0": [4.5, 4.5, 6.5, 6.5, 6.5, 6.5],
+                    "35.6": [4.5, 5.2, 6.5, 6.5, 6.5, 6.5],
+                    "36.3": [4.5, 5.8, 6.5, 6.5, 6.5, 6.5],
+                    "36.9": [4.5, 6.5, 6.5, 6.5, 6.5, 6.5],
+                    "37.6": [5.2, 6.5, 6.5, 6.5, 6.5, 6.5],
+                    "38.2": [5.8, 6.5, 6.5, 6.5, 6.5, 6.5],
+                    "38.9": [6.5, 6.5, 6.5, 6.5, 6.5, 6.5]
+                },
+                "HPパーセンテージ": {
+                    "4.1": [4.1],
+                    "4.7": [4.7],
+                    "5.3": [5.3],
+                    "5.8": [5.8],
+                    "8.2": [4.1, 4.1],
+                    "8.7": [4.1, 4.7],
+                    "9.3": [4.1, 5.3],
+                    "9.9": [4.1, 5.8],
+                    "10.5": [4.7, 5.8],
+                    "11.1": [5.3, 5.8],
+                    "11.7": [5.8, 5.8],
+                    "12.2": [4.1, 4.1, 4.1],
+                    "12.8": [4.1, 4.1, 4.7],
+                    "13.4": [4.1, 4.1, 5.3],
+                    "14.0": [4.1, 4.1, 5.8],
+                    "14.6": [4.1, 4.7, 5.8],
+                    "15.2": [4.1, 5.3, 5.8],
+                    "15.7": [4.1, 5.8, 5.8],
+                    "16.3": [4.1, 4.1, 4.1, 4.1],
+                    "15.8": [5.3, 5.3, 5.3],
+                    "16.9": [4.1, 4.1, 4.1, 4.7],
+                    "17.5": [4.1, 4.1, 4.1, 5.3],
+                    "18.1": [4.1, 4.1, 4.1, 5.8],
+                    "18.7": [4.1, 4.1, 4.7, 5.8],
+                    "19.2": [4.1, 4.1, 5.3, 5.8],
+                    "19.8": [4.1, 4.1, 5.8, 5.8],
+                    "20.4": [4.1, 4.1, 4.1, 4.1, 4.1],
+                    "21.0": [4.1, 4.1, 4.1, 4.1, 4.7],
+                    "21.6": [4.1, 4.1, 4.1, 4.1, 5.3],
+                    "18.6": [4.7, 4.7, 4.7, 4.7],
+                    "22.2": [4.1, 4.1, 4.1, 4.1, 5.8],
+                    "22.7": [4.1, 4.1, 4.1, 4.7, 5.8],
+                    "23.3": [4.1, 4.1, 4.1, 5.3, 5.8],
+                    "23.9": [4.1, 4.1, 4.1, 5.8, 5.8],
+                    "22.1": [4.1, 4.1, 4.7, 4.7, 4.7],
+                    "24.5": [4.1, 4.1, 4.1, 4.1, 4.1, 4.1],
+                    "25.1": [4.1, 4.1, 4.1, 4.1, 4.1, 4.7],
+                    "25.7": [4.1, 4.1, 4.1, 4.1, 4.1, 5.3],
+                    "26.2": [4.1, 4.1, 4.1, 4.1, 4.1, 5.8],
+                    "26.8": [4.1, 4.1, 4.1, 4.1, 4.7, 5.8],
+                    "27.4": [4.1, 4.1, 4.1, 4.1, 5.3, 5.8],
+                    "25.6": [4.1, 4.1, 4.1, 4.1, 4.7, 4.7],
+                    "28.0": [4.1, 4.1, 4.1, 4.1, 5.8, 5.8],
+                    "26.3": [5.3, 5.3, 5.3, 5.3, 5.3],
+                    "28.6": [4.1, 4.1, 4.1, 4.7, 5.8, 5.8],
+                    "29.2": [4.1, 4.1, 4.1, 5.3, 5.8, 5.8],
+                    "29.7": [4.1, 4.1, 4.1, 5.8, 5.8, 5.8],
+                    "29.1": [4.1, 4.1, 4.7, 4.7, 5.8, 5.8],
+                    "30.3": [4.1, 4.1, 4.7, 5.8, 5.8, 5.8],
+                    "30.9": [4.1, 4.1, 5.3, 5.8, 5.8, 5.8],
+                    "31.5": [4.1, 4.1, 5.8, 5.8, 5.8, 5.8],
+                    "32.1": [4.1, 4.7, 5.8, 5.8, 5.8, 5.8],
+                    "32.7": [4.1, 5.3, 5.8, 5.8, 5.8, 5.8],
+                    "33.2": [4.1, 5.8, 5.8, 5.8, 5.8, 5.8],
+                    "28.5": [4.1, 4.7, 4.7, 4.7, 4.7, 5.8],
+                    "32.6": [4.7, 4.7, 5.8, 5.8, 5.8, 5.8],
+                    "33.8": [4.7, 5.8, 5.8, 5.8, 5.8, 5.8],
+                    "34.4": [5.3, 5.8, 5.8, 5.8, 5.8, 5.8],
+                    "35.0": [5.8, 5.8, 5.8, 5.8, 5.8, 5.8]
+                },
+                "防御パーセンテージ": {
+                    "5.1": [5.1],
+                    "5.8": [5.8],
+                    "6.6": [6.6],
+                    "7.3": [7.3],
+                    "10.2": [5.1, 5.1],
+                    "10.9": [5.1, 5.8],
+                    "11.7": [5.1, 6.6],
+                    "12.4": [5.1, 7.3],
+                    "13.1": [5.8, 7.3],
+                    "13.9": [6.6, 7.3],
+                    "14.6": [7.3, 7.3],
+                    "15.3": [5.1, 5.1, 5.1],
+                    "16.0": [5.1, 5.1, 5.8],
+                    "16.8": [5.1, 5.1, 6.6],
+                    "17.5": [5.1, 5.1, 7.3],
+                    "18.2": [5.1, 5.8, 7.3],
+                    "19.0": [5.1, 6.6, 7.3],
+                    "19.7": [5.1, 7.3, 7.3],
+                    "20.4": [5.1, 5.1, 5.1, 5.1],
+                    "21.1": [5.1, 5.1, 5.1, 5.8],
+                    "21.9": [5.1, 5.1, 5.1, 6.6],
+                    "22.6": [5.1, 5.1, 5.1, 7.3],
+                    "23.3": [5.1, 5.1, 5.8, 7.3],
+                    "24.0": [5.1, 5.1, 6.6, 7.3],
+                    "24.8": [5.1, 5.1, 7.3, 7.3],
+                    "25.5": [5.1, 5.1, 5.1, 5.1, 5.1],
+                    "24.1": [5.1, 5.8, 5.8, 7.3],
+                    "26.2": [5.1, 5.1, 5.1, 5.1, 5.8],
+                    "27.0": [5.1, 5.1, 5.1, 5.1, 6.6],
+                    "27.7": [5.1, 5.1, 5.1, 5.1, 7.3],
+                    "28.4": [5.1, 5.1, 5.1, 5.8, 7.3],
+                    "29.2": [5.1, 5.1, 5.1, 6.6, 7.3],
+                    "29.9": [5.1, 5.1, 5.1, 7.3, 7.3],
+                    "30.6": [5.1, 5.1, 5.1, 5.1, 5.1, 5.1],
+                    "29.1": [5.1, 5.1, 5.8, 6.6, 6.6],
+                    "31.3": [5.1, 5.1, 5.1, 5.1, 5.1, 5.8],
+                    "32.1": [5.1, 5.1, 5.1, 5.1, 5.1, 6.6],
+                    "32.8": [5.1, 5.1, 5.1, 5.1, 5.1, 7.3],
+                    "33.5": [5.1, 5.1, 5.1, 5.1, 5.8, 7.3],
+                    "34.3": [5.1, 5.1, 5.1, 5.1, 6.6, 7.3],
+                    "35.0": [5.1, 5.1, 5.1, 5.1, 7.3, 7.3],
+                    "35.7": [5.1, 5.1, 5.1, 5.8, 7.3, 7.3],
+                    "36.5": [7.3, 7.3, 7.3, 7.3, 7.3],
+                    "36.4": [5.1, 5.1, 5.1, 6.6, 7.3, 7.3],
+                    "37.2": [5.1, 5.1, 5.1, 7.3, 7.3, 7.3],
+                    "37.9": [5.1, 5.1, 5.8, 7.3, 7.3, 7.3],
+                    "34.2": [5.1, 5.1, 5.1, 5.8, 6.6, 6.6],
+                    "38.6": [5.1, 5.1, 6.6, 7.3, 7.3, 7.3],
+                    "39.4": [5.1, 5.1, 7.3, 7.3, 7.3, 7.3],
+                    "40.1": [5.1, 5.8, 7.3, 7.3, 7.3, 7.3],
+                    "40.8": [5.1, 6.6, 7.3, 7.3, 7.3, 7.3],
+                    "41.6": [5.1, 7.3, 7.3, 7.3, 7.3, 7.3],
+                    "42.3": [5.8, 7.3, 7.3, 7.3, 7.3, 7.3],
+                    "43.0": [6.6, 7.3, 7.3, 7.3, 7.3, 7.3],
+                    "43.7": [7.3, 7.3, 7.3, 7.3, 7.3, 7.3]
+                },
+                "攻撃パーセンテージ": {
+                    "4.1": [4.1],
+                    "4.7": [4.7],
+                    "5.3": [5.3],
+                    "5.8": [5.8],
+                    "8.2": [4.1, 4.1],
+                    "8.7": [4.1, 4.7],
+                    "9.3": [4.1, 5.3],
+                    "9.9": [4.1, 5.8],
+                    "10.5": [4.7, 5.8],
+                    "11.1": [5.3, 5.8],
+                    "11.7": [5.8, 5.8],
+                    "12.2": [4.1, 4.1, 4.1],
+                    "12.8": [4.1, 4.1, 4.7],
+                    "13.4": [4.1, 4.1, 5.3],
+                    "14.0": [4.1, 4.1, 5.8],
+                    "14.6": [4.1, 4.7, 5.8],
+                    "15.2": [4.1, 5.3, 5.8],
+                    "15.7": [4.1, 5.8, 5.8],
+                    "16.3": [4.1, 4.1, 4.1, 4.1],
+                    "15.8": [5.3, 5.3, 5.3],
+                    "16.9": [4.1, 4.1, 4.1, 4.7],
+                    "17.5": [4.1, 4.1, 4.1, 5.3],
+                    "18.1": [4.1, 4.1, 4.1, 5.8],
+                    "18.7": [4.1, 4.1, 4.7, 5.8],
+                    "19.2": [4.1, 4.1, 5.3, 5.8],
+                    "19.8": [4.1, 4.1, 5.8, 5.8],
+                    "20.4": [4.1, 4.1, 4.1, 4.1, 4.1],
+                    "21.0": [4.1, 4.1, 4.1, 4.1, 4.7],
+                    "21.6": [4.1, 4.1, 4.1, 4.1, 5.3],
+                    "18.6": [4.7, 4.7, 4.7, 4.7],
+                    "22.2": [4.1, 4.1, 4.1, 4.1, 5.8],
+                    "22.7": [4.1, 4.1, 4.1, 4.7, 5.8],
+                    "23.3": [4.1, 4.1, 4.1, 5.3, 5.8],
+                    "23.9": [4.1, 4.1, 4.1, 5.8, 5.8],
+                    "22.1": [4.1, 4.1, 4.7, 4.7, 4.7],
+                    "24.5": [4.1, 4.1, 4.1, 4.1, 4.1, 4.1],
+                    "25.1": [4.1, 4.1, 4.1, 4.1, 4.1, 4.7],
+                    "25.7": [4.1, 4.1, 4.1, 4.1, 4.1, 5.3],
+                    "26.2": [4.1, 4.1, 4.1, 4.1, 4.1, 5.8],
+                    "26.8": [4.1, 4.1, 4.1, 4.1, 4.7, 5.8],
+                    "27.4": [4.1, 4.1, 4.1, 4.1, 5.3, 5.8],
+                    "25.6": [4.1, 4.1, 4.1, 4.1, 4.7, 4.7],
+                    "28.0": [4.1, 4.1, 4.1, 4.1, 5.8, 5.8],
+                    "26.3": [5.3, 5.3, 5.3, 5.3, 5.3],
+                    "28.6": [4.1, 4.1, 4.1, 4.7, 5.8, 5.8],
+                    "29.2": [4.1, 4.1, 4.1, 5.3, 5.8, 5.8],
+                    "29.7": [4.1, 4.1, 4.1, 5.8, 5.8, 5.8],
+                    "29.1": [4.1, 4.1, 4.7, 4.7, 5.8, 5.8],
+                    "30.3": [4.1, 4.1, 4.7, 5.8, 5.8, 5.8],
+                    "30.9": [4.1, 4.1, 5.3, 5.8, 5.8, 5.8],
+                    "31.5": [4.1, 4.1, 5.8, 5.8, 5.8, 5.8],
+                    "32.1": [4.1, 4.7, 5.8, 5.8, 5.8, 5.8],
+                    "32.7": [4.1, 5.3, 5.8, 5.8, 5.8, 5.8],
+                    "33.2": [4.1, 5.8, 5.8, 5.8, 5.8, 5.8],
+                    "28.5": [4.1, 4.7, 4.7, 4.7, 4.7, 5.8],
+                    "32.6": [4.7, 4.7, 5.8, 5.8, 5.8, 5.8],
+                    "33.8": [4.7, 5.8, 5.8, 5.8, 5.8, 5.8],
+                    "34.4": [5.3, 5.8, 5.8, 5.8, 5.8, 5.8],
+                    "35.0": [5.8, 5.8, 5.8, 5.8, 5.8, 5.8]
+                },
+                "HP": {
+                    "209": [209],
+                    "239": [239],
+                    "269": [269],
+                    "299": [299],
+                    "418": [209, 209],
+                    "448": [209, 239],
+                    "478": [209, 269],
+                    "508": [209, 299],
+                    "538": [239, 299],
+                    "568": [269, 299],
+                    "598": [299, 299],
+                    "627": [209, 209, 209],
+                    "657": [209, 209, 239],
+                    "687": [209, 209, 269],
+                    "717": [209, 209, 299],
+                    "747": [209, 239, 299],
+                    "777": [209, 269, 299],
+                    "807": [209, 299, 299],
+                    "837": [209, 209, 209, 209],
+                    "866": [209, 209, 209, 239],
+                    "896": [209, 209, 209, 269],
+                    "926": [209, 209, 209, 299],
+                    "956": [209, 209, 239, 299],
+                    "986": [209, 209, 269, 299],
+                    "1016": [209, 209, 299, 299],
+                    "1046": [209, 209, 209, 209, 209],
+                    "1076": [209, 209, 209, 209, 239],
+                    "1105": [209, 209, 209, 209, 269],
+                    "1135": [209, 209, 209, 209, 299],
+                    "1165": [209, 209, 209, 239, 299],
+                    "1195": [209, 209, 209, 269, 299],
+                    "1225": [209, 209, 209, 299, 299],
+                    "1255": [209, 209, 209, 209, 209, 209],
+                    "1285": [209, 209, 209, 209, 209, 239],
+                    "1315": [209, 209, 209, 209, 209, 269],
+                    "1344": [209, 209, 209, 209, 209, 299],
+                    "1374": [209, 209, 209, 209, 239, 299],
+                    "1404": [209, 209, 209, 209, 269, 299],
+                    "1434": [209, 209, 209, 209, 299, 299],
+                    "1464": [209, 209, 209, 239, 299, 299],
+                    "1494": [209, 209, 209, 269, 299, 299],
+                    "1524": [209, 209, 209, 299, 299, 299],
+                    "1554": [209, 209, 239, 299, 299, 299],
+                    "1583": [209, 209, 269, 299, 299, 299],
+                    "1613": [209, 209, 299, 299, 299, 299],
+                    "1643": [209, 239, 299, 299, 299, 299],
+                    "1673": [209, 269, 299, 299, 299, 299],
+                    "1703": [209, 299, 299, 299, 299, 299],
+                    "1733": [239, 299, 299, 299, 299, 299],
+                    "1763": [269, 299, 299, 299, 299, 299],
+                    "1793": [299, 299, 299, 299, 299, 299]
+                },
+                "攻撃力": {
+                    "14": [14],
+                    "16": [16],
+                    "18": [18],
+                    "19": [19],
+                    "27": [14, 14],
+                    "29": [14, 16],
+                    "31": [14, 18],
+                    "33": [14, 19],
+                    "35": [16, 19],
+                    "37": [18, 19],
+                    "39": [19, 19],
+                    "41": [14, 14, 14],
+                    "43": [14, 14, 16],
+                    "45": [14, 14, 18],
+                    "47": [14, 14, 19],
+                    "49": [14, 16, 19],
+                    "51": [14, 18, 19],
+                    "53": [14, 19, 19],
+                    "54": [14, 14, 14, 14],
+                    "56": [14, 14, 14, 16],
+                    "58": [14, 14, 14, 18],
+                    "60": [14, 14, 14, 19],
+                    "62": [14, 14, 16, 19],
+                    "64": [14, 14, 18, 19],
+                    "66": [14, 14, 19, 19],
+                    "68": [14, 14, 14, 14, 14],
+                    "70": [14, 14, 14, 14, 16],
+                    "72": [14, 14, 14, 14, 18],
+                    "74": [14, 14, 14, 14, 19],
+                    "76": [14, 14, 14, 16, 19],
+                    "78": [14, 14, 14, 18, 19],
+                    "80": [14, 14, 14, 19, 19],
+                    "82": [14, 14, 14, 14, 14, 14],
+                    "84": [14, 14, 14, 14, 14, 16],
+                    "86": [14, 14, 14, 14, 14, 18],
+                    "88": [14, 14, 14, 14, 14, 19],
+                    "89": [14, 14, 14, 14, 16, 19],
+                    "91": [14, 14, 14, 14, 18, 19],
+                    "93": [14, 14, 14, 14, 19, 19],
+                    "95": [14, 14, 14, 16, 19, 19],
+                    "97": [14, 14, 14, 18, 19, 19],
+                    "90": [14, 14, 14, 14, 18, 18],
+                    "99": [14, 14, 14, 19, 19, 19],
+                    "101": [14, 14, 16, 19, 19, 19],
+                    "103": [14, 14, 18, 19, 19, 19],
+                    "105": [14, 14, 19, 19, 19, 19],
+                    "107": [14, 16, 19, 19, 19, 19],
+                    "109": [14, 18, 19, 19, 19, 19],
+                    "111": [14, 19, 19, 19, 19, 19],
+                    "113": [16, 19, 19, 19, 19, 19],
+                    "115": [18, 19, 19, 19, 19, 19],
+                    "117": [19, 19, 19, 19, 19, 19]
+                },
+                "防御力": {
+                    "16": [16],
+                    "19": [19],
+                    "21": [21],
+                    "23": [23],
+                    "32": [16, 16],
+                    "35": [16, 19],
+                    "37": [16, 21],
+                    "39": [16, 23],
+                    "42": [19, 23],
+                    "44": [21, 23],
+                    "46": [23, 23],
+                    "49": [16, 16, 16],
+                    "51": [16, 16, 19],
+                    "53": [16, 16, 21],
+                    "56": [16, 16, 23],
+                    "58": [16, 19, 23],
+                    "60": [16, 21, 23],
+                    "62": [16, 23, 23],
+                    "63": [16, 23, 23],
+                    "65": [16, 16, 16, 16],
+                    "67": [16, 16, 16, 19],
+                    "69": [16, 16, 16, 21],
+                    "72": [16, 16, 16, 23],
+                    "74": [16, 16, 19, 23],
+                    "76": [16, 16, 21, 23],
+                    "79": [16, 16, 23, 23],
+                    "81": [16, 16, 16, 16, 16],
+                    "83": [16, 16, 16, 16, 19],
+                    "86": [16, 16, 16, 16, 21],
+                    "88": [16, 16, 16, 16, 23],
+                    "90": [16, 16, 16, 19, 23],
+                    "93": [16, 16, 16, 21, 23],
+                    "95": [16, 16, 16, 23, 23],
+                    "97": [16, 16, 16, 16, 16, 16],
+                    "100": [16, 16, 16, 16, 16, 19],
+                    "102": [16, 16, 16, 16, 16, 21],
+                    "104": [16, 16, 16, 16, 16, 23],
+                    "106": [16, 16, 16, 16, 19, 23],
+                    "109": [16, 16, 16, 16, 21, 23],
+                    "111": [16, 16, 16, 16, 23, 23],
+                    "113": [16, 16, 16, 19, 23, 23],
+                    "116": [16, 16, 16, 21, 23, 23],
+                    "118": [16, 16, 16, 23, 23, 23],
+                    "120": [16, 16, 19, 23, 23, 23],
+                    "123": [16, 16, 21, 23, 23, 23],
+                    "125": [16, 16, 23, 23, 23, 23],
+                    "127": [16, 19, 23, 23, 23, 23],
+                    "130": [16, 21, 23, 23, 23, 23],
+                    "132": [16, 23, 23, 23, 23, 23],
+                    "134": [19, 23, 23, 23, 23, 23],
+                    "137": [21, 23, 23, 23, 23, 23],
+                    "139": [23, 23, 23, 23, 23, 23]
+                },
+                "元素熟知": {
+                    "16": [16],
+                    "19": [19],
+                    "21": [21],
+                    "23": [23],
+                    "33": [16, 16],
+                    "35": [16, 19],
+                    "37": [16, 21],
+                    "40": [16, 23],
+                    "42": [19, 23],
+                    "44": [21, 23],
+                    "47": [23, 23],
+                    "49": [16, 16, 16],
+                    "51": [16, 16, 19],
+                    "54": [16, 16, 21],
+                    "56": [16, 16, 23],
+                    "58": [16, 19, 23],
+                    "61": [16, 21, 23],
+                    "63": [16, 23, 23],
+                    "65": [16, 16, 16, 16],
+                    "68": [16, 16, 16, 19],
+                    "70": [16, 16, 16, 21],
+                    "72": [16, 16, 16, 23],
+                    "75": [16, 16, 19, 23],
+                    "77": [16, 16, 21, 23],
+                    "79": [16, 16, 23, 23],
+                    "82": [16, 16, 16, 16, 16],
+                    "84": [16, 16, 16, 16, 19],
+                    "86": [16, 16, 16, 16, 21],
+                    "89": [16, 16, 16, 16, 23],
+                    "91": [16, 16, 16, 19, 23],
+                    "93": [16, 16, 16, 21, 23],
+                    "96": [16, 16, 16, 23, 23],
+                    "98": [16, 16, 16, 16, 16, 16],
+                    "100": [16, 16, 16, 16, 16, 19],
+                    "103": [16, 16, 16, 16, 16, 21],
+                    "105": [16, 16, 16, 16, 16, 23],
+                    "107": [16, 16, 16, 16, 19, 23],
+                    "110": [16, 16, 16, 16, 21, 23],
+                    "112": [16, 16, 16, 16, 23, 23],
+                    "114": [16, 16, 16, 19, 23, 23],
+                    "117": [16, 16, 16, 21, 23, 23],
+                    "119": [16, 16, 16, 23, 23, 23],
+                    "121": [16, 16, 19, 23, 23, 23],
+                    "124": [16, 16, 21, 23, 23, 23],
+                    "126": [16, 16, 23, 23, 23, 23],
+                    "128": [16, 19, 23, 23, 23, 23],
+                    "131": [16, 21, 23, 23, 23, 23],
+                    "133": [16, 23, 23, 23, 23, 23],
+                    "135": [19, 23, 23, 23, 23, 23],
+                    "138": [21, 23, 23, 23, 23, 23],
+                    "140": [23, 23, 23, 23, 23, 23]
+                }
+            }
+
+    def difference_costume_json(self): # コスチュームの動的な指定
+        return {
+            "202901": {
+                "iconName": "UI_AvatarIcon_KleeCostumeWitch",
+                "sideIconName": "UI_AvatarIcon_Side_KleeCostumeWitch",
+                "nameTextMapHash": 2343491290
+            },
+            "201501": {
+                "iconName": "UI_AvatarIcon_KaeyaCostumeDancer",
+                "sideIconName": "UI_AvatarIcon_Side_KaeyaCostumeDancer",
+                "nameTextMapHash": 177626138
+            }
+        }
+
+    def locale(self): # 読み込んだデータの日本語化
+        LJsn = json.loads(urllib.request.urlopen(
+            urllib.request.Request('https://raw.githubusercontent.com/EnkaNetwork/API-docs/master/store/loc.json', headers={'User-Agent': UsrAgn})).read().decode(errors='ignore'))
+        for percent in [ja for ja in LJsn['ja'] if 'PERCENT' in ja]:
+            if '力' in LJsn['ja'][percent]:
+                LJsn['ja'][percent] = LJsn['ja'][percent].replace('力', 'パーセンテージ')
+            else:
+                LJsn['ja'][percent] = LJsn['ja'][percent].replace(LJsn['ja'][percent][-1],
+                                                                  '{}パーセンテージ'.format(LJsn['ja'][percent][-1]))
+        return LJsn['ja']
+
+    def character_json(self): # キャラクター情報の取得
+        return json.loads(urllib.request.urlopen(urllib.request.Request('https://raw.githubusercontent.com/EnkaNetwork/API-docs/master/store/characters.json', headers={'User-Agent': UsrAgn})).read().decode(errors='ignore'))
+
+    def character_pfps_json(self): # キャラクターのアイコン取得
+        return json.loads(urllib.request.urlopen(urllib.request.Request('https://raw.githubusercontent.com/EnkaNetwork/API-docs/master/store/pfps.json', headers={'User-Agent': UsrAgn})).read().decode(errors='ignore'))
+
+    def costume_json(self): # コスチューム情報の動的な抽出
+        CosJsn = json.loads(urllib.request.urlopen(
+            urllib.request.Request('https://raw.githubusercontent.com/EnkaNetwork/API-docs/master/store/costumes.json', headers={'User-Agent': UsrAgn})).read().decode(errors='ignore'))
+        for key, value in self.difference_costume_json().items():
+            CosJsn[key] = value
+        return CosJsn
+
+    def option_calculation(self, data: dict):  # 聖遺物の詳細を計算
+        dup = self.mainoption()  # 聖遺物のメインオプション
+        mapping = self.suboption()  # 聖遺物のサブオプション
+        res = [None, None, None, None]
+        keymap = list(map(str, data.keys()))
+        is_dup = [(ctg, state) for ctg, state in data.items() if str(state) in dup[ctg]['ov']]
+        counter_flag = 0
+        dup_ctg = [i[0] for i in is_dup]
+        maxium_state_ct = 9
+
+        if not len(is_dup):
+            for ctg, state in data.items():
+                idx = keymap.index(ctg)
+                res[idx] = mapping[ctg][str(state)]
+            return res
+
+        if len(is_dup) == 1:
+            single_state = {c: s for c, s in data.items() if c not in dup_ctg}
+            for ctg, state in single_state.items():
+                idx = keymap.index(ctg)
+                res[idx] = mapping[ctg][str(state)]
+                counter_flag += len(mapping[ctg][str(state)])
+
+            dup_state = {c: s for c, s in data.items() if c in dup_ctg}
+            long = maxium_state_ct - counter_flag
+            for ctg, state in dup_state.items():
+                possiblity = dup[ctg][str(state)]
+                for p in possiblity:
+                    if len(p) == long or len(p) == long - 1:
+                        idx = keymap.index(ctg)
+                        res[idx] = p
+                        return res
+        if len(is_dup) == 2:
+            single_state = {c: s for c, s in data.items() if c not in dup_ctg}
+            for ctg, state in single_state.items():
+                idx = keymap.index(ctg)
+                res[idx] = mapping[ctg][str(state)]
+                counter_flag += len(mapping[ctg][str(state)])
+
+            dup_state = {c: s for c, s in data.items() if c in dup_ctg}
+            long = maxium_state_ct - counter_flag
+
+            sample = [[ctg, state] for ctg, state in dup_state.items()]
+
+            possiblity1 = dup[sample[0][0]][str(sample[0][1])]
+            possiblity2 = dup[sample[1][0]][str(sample[1][1])]
+
+            p1 = [len(p) for p in possiblity1]
+            p2 = [len(p) for p in possiblity2]
+
+            p = itertools.product(p1, p2)
+            r = None
+            for v in p:
+                if sum(v) == long or sum(v) == long - 1:
+                    r = v
+                    break
+            idx1 = keymap.index(sample[0][0])
+            idx2 = keymap.index(sample[1][0])
+            res[idx1] = possiblity1[p1.index(v[0])]
+            res[idx2] = possiblity2[p2.index(v[1])]
+            return res
+        if len(is_dup) == 3:
+            single_state = {c: s for c, s in data.items() if c not in dup_ctg}
+            for ctg, state in single_state.items():
+                idx = keymap.index(ctg)
+                res[idx] = mapping[ctg][str(state)]
+                counter_flag += len(mapping[ctg][str(state)])
+            dup_state = {c: s for c, s in data.items() if c in dup_ctg}
+            long = maxium_state_ct - counter_flag
+            sample = [[ctg, state] for ctg, state in dup_state.items()]
+            possiblity1 = dup[sample[0][0]][str(sample[0][1])]
+            possiblity2 = dup[sample[1][0]][str(sample[1][1])]
+            possiblity3 = dup[sample[2][0]][str(sample[2][1])]
+            p1 = [len(p) for p in possiblity1]
+            p2 = [len(p) for p in possiblity2]
+            p3 = [len(p) for p in possiblity3]
+            p = itertools.product(p1, p2, p3)
+            r = None
+            for v in p:
+                if sum(v) == long or sum(v) == long - 1:
+                    r = v
+                    break
+            idx1 = keymap.index(sample[0][0])
+            idx2 = keymap.index(sample[1][0])
+            idx3 = keymap.index(sample[2][0])
+            res[idx1] = possiblity1[p1.index(v[0])]
+            res[idx2] = possiblity2[p2.index(v[1])]
+            res[idx3] = possiblity3[p3.index(v[2])]
+            return res
+        if len(is_dup) == 4:
+            dup_state = {c: s for c, s in data.items() if c in dup_ctg}
+            long = maxium_state_ct - counter_flag
+            sample = [[ctg, state] for ctg, state in dup_state.items()]
+            possiblity1 = dup[sample[0][0]][str(sample[0][1])]
+            possiblity2 = dup[sample[1][0]][str(sample[1][1])]
+            possiblity3 = dup[sample[2][0]][str(sample[2][1])]
+            possiblity4 = dup[sample[3][0]][str(sample[3][1])]
+            p1 = [len(p) for p in possiblity1]
+            p2 = [len(p) for p in possiblity2]
+            p3 = [len(p) for p in possiblity3]
+            p4 = [len(p) for p in possiblity4]
+            p = itertools.product(p1, p2, p3, p4)
+            r = None
+            for v in p:
+                if sum(v) == long or sum(v) == long - 1:
+                    r = v
+                    break
+            idx1 = keymap.index(sample[0][0])
+            idx2 = keymap.index(sample[1][0])
+            idx3 = keymap.index(sample[2][0])
+            idx4 = keymap.index(sample[3][0])
+            res[idx1] = possiblity1[p1.index(v[0])]
+            res[idx2] = possiblity2[p2.index(v[1])]
+            res[idx3] = possiblity3[p3.index(v[2])]
+            res[idx4] = possiblity4[p4.index(v[3])]
+            return res
+
+    def playerinfo(self):  # プレイヤー情報の一部を取得
+        player_infomation = self.player_data['playerInfo']  # 取得したデータから「playerInfo」を取得
+        if 'showAvatarInfoList' in player_infomation:  # 取得した「playerInfo」から「showAvatarInfoList」がある場合は以下を実行
+            for avater in player_infomation['showAvatarInfoList']:  # 取得したプレイヤーデータからキャラクター名を日本語へ変換
+                avater['name'] = self.locale_jp[
+                    '{}'.format(self.characters_json['{}'.format(avater['avatarId'])]['NameTextMapHash'])]
+
+        return player_infomation
+
+    def full_playerinfo(self, avateriD):  # プレイヤーデータの完全版を取得
+        avatar_data = []  # 事前に宣言
+        if 'avatarInfoList' in self.player_data:  # 取得したデータから「avaterInfoList」がある場合以下を実行
+            avatar_data = \
+            list(filter(lambda item: item.get('avatarId') == int(avateriD), self.player_data['avatarInfoList']))[0]
+        return avatar_data
+
+    def decimal_float(self, obj): # デシマルをフロートへ変換
+        if isinstance(obj, Decimal):
+            return float(obj)
+
+    def create_buildcard(self, avaterinfo, score_state):
+        # ここからキャラクターデータ
+        if len('{}'.format(avaterinfo['skillDepotId'])) == 3:
+            character_id = '{}-{}'.format(avaterinfo['avatarId'], avaterinfo['skillDepotId'])
+            character_skill_icons = ['{}.png'.format(list(self.characters_json[character_id]['Skills'].values())[2]),
+                                     '{}.png'.format(list(self.characters_json[character_id]['Skills'].values())[0]),
+                                     '{}.png'.format(
+                                         list(self.characters_json[character_id]['Skills'].values())[1])]  # キャラクター天賦画像
+        else:
+            character_id = '{}'.format(avaterinfo['avatarId'])
+            character_skill_icons = ['{}.png'.format(skill) for skill in
+                                     self.characters_json[character_id]['Skills'].values()]  # キャラクター天賦画像
+        try:
+            if len('{}'.format(avaterinfo['skillDepotId'])) == 3:
+                character_id = '{}-{}'.format(avaterinfo['avatarId'], avaterinfo['skillDepotId'])
+                character_skill_icons = [
+                    '{}.png'.format(list(self.characters_json[character_id]['Skills'].values())[2]),
+                    '{}.png'.format(list(self.characters_json[character_id]['Skills'].values())[0]),
+                    '{}.png'.format(list(self.characters_json[character_id]['Skills'].values())[1])]  # キャラクター天賦画像
+            else:
+                character_id = '{}'.format(avaterinfo['avatarId'])
+                character_skill_icons = ['{}.png'.format(skill) for skill in
+                                         self.characters_json[character_id]['Skills'].values()]  # キャラクター天賦画像
+        except:
+            character_id = '{}'.format(avaterinfo['avatarId'])
+            character_skill_icons = ['{}.png'.format(skill) for skill in
+                                     self.characters_json[character_id]['Skills'].values()]  # キャラクター天賦画像
+        element_locale = {'Fire': '炎', 'Water': '水', 'Electric': '雷', 'Ice': '氷', 'Wind': '風', 'Rock': '岩',
+                          'Grass': '草'}
+        character_element = element_locale[self.characters_json[character_id]['Element']]  # 元素
+        character_name = self.locale_jp['{}'.format(self.characters_json[character_id]['NameTextMapHash'])]  # キャラクター名
+        try:
+            character_icon = '{}.png'.format(
+                self.characters_json[character_id]['Costumes']['{}'.format(avaterinfo['costumeId'])][
+                    'sideIconName'].replace('UI_AvatarIcon_Side_', 'UI_Costume_'))  # キャラクターがコスチュームを付けていた場合の対応
+        except:
+            character_icon = '{}.png'.format(
+                '{}'.format(self.characters_json[character_id]['SideIconName']).replace('UI_AvatarIcon_Side_',
+                                                                                        'UI_Gacha_AvatarImg_'))  # キャラクターの画像
+        try:
+            character_const = len(avaterinfo['talentIdList']) - 1  # キャラクター凸数
+        except:
+            character_const = -1
+        character_const_icons = ['{}.png'.format(cicon) for cicon in
+                                 self.characters_json[character_id]['Consts']]  # キャラクター凸画像
+        character_level = '{}'.format(avaterinfo['propMap']['4001']['val'])  # キャラクターのレベル
+        character_fav_rate = '{}'.format(avaterinfo['fetterInfo']['expLevel'])  # キャラクターの好感度
+        character_hp = int(
+            Decimal(avaterinfo['fightPropMap']['2000']).quantize(Decimal('0'), rounding=ROUND_HALF_UP))  # キャラクターのHP
+        character_attack_rate = int(
+            Decimal(avaterinfo['fightPropMap']['2001']).quantize(Decimal('0'), rounding=ROUND_HALF_UP))  # キャラクターの攻撃力
+        character_defence_rate = int(
+            Decimal(avaterinfo['fightPropMap']['2002']).quantize(Decimal('0'), rounding=ROUND_HALF_UP))  # キャラクターの防御力
+        character_element_mastery = int(
+            Decimal(avaterinfo['fightPropMap']['28']).quantize(Decimal('0'), rounding=ROUND_HALF_UP))  # キャラクターの熟知
+        character_charge_efficiency = Decimal(avaterinfo['fightPropMap']['23'] * 100).quantize(Decimal('0.1'),
+                                                                                               rounding=ROUND_HALF_UP)  # キャラクターの元素チャージ効率
+        character_critical_rate = Decimal(avaterinfo['fightPropMap']['20'] * 100).quantize(Decimal('0.1'),
+                                                                                           rounding=ROUND_HALF_UP)  # キャラクターの会心率
+        character_critical_damage_rate = Decimal(avaterinfo['fightPropMap']['22'] * 100).quantize(Decimal('0.1'),
+                                                                                                  rounding=ROUND_HALF_UP)
+        character_element_buff_json = {'30': '物理ダメージ', '40': '炎元素ダメージ', '41': '雷元素ダメージ', '42': '水元素ダメージ',
+                                       '43': '草元素ダメージ', '44': '風元素ダメージ', '45': '岩元素ダメージ', '46': '氷元素ダメージ'}
+        character_element_buff = list(character_element_buff_json.keys())
+        character_element_max_buff_key = '30'
+        character_element_max_value = 0
+        for sk in character_element_buff:
+            if avaterinfo['fightPropMap'][sk] > character_element_max_value:
+                character_element_max_value = avaterinfo['fightPropMap'][sk]
+                character_element_max_buff_key = sk
+        character_element_buff_name = '{}'.format(character_element_buff_json[character_element_max_buff_key])
+        character_element_buff_value = '{}'.format(
+            Decimal(avaterinfo['fightPropMap'][character_element_max_buff_key] * 100).quantize(Decimal('0.1'),
+                                                                                               rounding=ROUND_HALF_UP))
+        if 'proudSkillExtraLevelMap' in avaterinfo:
+            try:
+                PMap = self.characters_json['{}'.format(character_id)]['ProudMap']
+                for sk in list(map(int, avaterinfo['skillLevelMap'].keys())):
+                    try:
+                        if PMap['{}'.format(sk)] in list(map(int, avaterinfo['proudSkillExtraLevelMap'].keys())):
+                            avaterinfo['skillLevelMap']['{}'.format(sk)] += avaterinfo['proudSkillExtraLevelMap'][
+                                PMap['{}'.format(sk)]]
+                    except:
+                        pass
+            except:
+                pass
+        character_talent_normal = '{}'.format(avaterinfo['skillLevelMap']['{}'.format(
+            self.characters_json['{}'.format(character_id)]['SkillOrder'][0])])  # キャラクター天賦: 通常攻撃
+        character_talent_skill = '{}'.format(avaterinfo['skillLevelMap']['{}'.format(
+            self.characters_json['{}'.format(character_id)]['SkillOrder'][1])])  # キャラクター天賦: スキル攻撃
+        character_talent_explosion = '{}'.format(avaterinfo['skillLevelMap']['{}'.format(
+            self.characters_json['{}'.format(character_id)]['SkillOrder'][2])])  # キャラクター天賦: 爆発攻撃
+        character_base_hp = int(
+            Decimal(avaterinfo['fightPropMap']['1']).quantize(Decimal('0'), rounding=ROUND_HALF_UP))  # キャラクター基礎HP
+        character_base_attack = int(
+            Decimal(avaterinfo['fightPropMap']['4']).quantize(Decimal('0'), rounding=ROUND_HALF_UP))  # キャラクター基礎攻撃力
+        character_base_defence = int(
+            Decimal(avaterinfo['fightPropMap']['7']).quantize(Decimal('0'), rounding=ROUND_HALF_UP))  # キャラクター基礎防御力
+        # ここまでキャラクターデータ
+        # ここから武器データ
+        weapon = list(filter(lambda item: item.get('weapon'), avaterinfo['equipList']))[0]  # 武器のデータ
+        weapon_name = self.locale_jp[weapon['flat']['nameTextMapHash']]  # 武器の名前
+        weapon_level = weapon['weapon']['level']  # 武器のレベル
+        try:
+            weapon_constellations = list(weapon['weapon']['affixMap'].values())[0] + 1  # 武器の凸数
+        except:
+            weapon_constellations = 2
+        weapon_rarelity = weapon['flat']['rankLevel']  # 武器のレアリティ
+        weapon_attack_rate = \
+        list(filter(lambda item: item['appendPropId'] == 'FIGHT_PROP_BASE_ATTACK', weapon['flat']['weaponStats']))[0][
+            'statValue']  # 武器の基礎攻撃力
+        try:
+            weapon_sub_name = self.locale_jp[list(
+                filter(lambda item: item['appendPropId'] != 'FIGHT_PROP_BASE_ATTACK', weapon['flat']['weaponStats']))[
+                0]['appendPropId']]
+        except:
+            weapon_sub_name = None
+        try:
+            weapon_sub_value = \
+            list(filter(lambda item: item['appendPropId'] != 'FIGHT_PROP_BASE_ATTACK', weapon['flat']['weaponStats']))[
+                0]['statValue']
+        except:
+            weapon_sub_value = '1'
+        weapon_icon = '{}.png'.format(weapon['flat']['icon'])
+        # ここまで武器データ
+        # ここから聖遺物データ
+        artifact_state = {'HP': 'HPパーセンテージ', '攻撃': '攻撃パーセンテージ', '防御': '防御パーセンテージ', 'チャージ': '元素チャージ効率',
+                          '元素熟知': '元素熟知'}
+        artifact_total_score = 0
+        artifacts_score = {'total': 0.0, 'state': score_state, 'flower': 0.0, 'wing': 0.0, 'clock': 0.0, 'cup': 0.0,
+                           'crown': 0.0}
+        artifact_list = list(filter(lambda item: item.get('reliquary'), avaterinfo['equipList']))
+        artifact_type_name = {'EQUIP_BRACER': 'flower', 'EQUIP_NECKLACE': 'wing', 'EQUIP_SHOES': 'clock',
+                              'EQUIP_RING': 'cup', 'EQUIP_DRESS': 'crown'}
+        artifacts = {
+            'flower': {'type': '', 'icon': '', 'level': 1, 'rarelity': 1, 'mainoption': {'optionName': '', 'value': 0},
+                       'suboption': []},
+            'wing': {'type': '', 'icon': '', 'level': 1, 'rarelity': 1, 'mainoption': {'optionName': '', 'value': 0},
+                     'suboption': []},
+            'clock': {'type': '', 'icon': '', 'level': 1, 'rarelity': 1, 'mainoption': {'optionName': '', 'value': 0},
+                      'suboption': []},
+            'cup': {'type': '', 'icon': '', 'level': 1, 'rarelity': 1, 'mainoption': {'optionName': '', 'value': 0},
+                    'suboption': []},
+            'crown': {'type': '', 'icon': '', 'level': 1, 'rarelity': 1, 'mainoption': {'optionName': '', 'value': 0},
+                      'suboption': []}}
+        for _Artifact in artifact_list:
+            # 聖遺物のメインオプションを設定
+            try:
+                artifact = artifacts[artifact_type_name[_Artifact['flat']['equipType']]]
+            except:
+                artifact = None
+            if not artifact == None:  # 聖遺物情報があるかないか。あるなら以下実行
+                artifact['type'] = self.locale_jp[_Artifact['flat']['setNameTextMapHash']]  # 聖遺物のタイプ
+                artifact['icon'] = '{}.png'.format(_Artifact['flat']['icon'])  # 聖遺物のアイコン名
+                artifact['level'] = _Artifact['reliquary']['level'] - 1  # 聖遺物のレベル
+                artifact['rarelity'] = _Artifact['flat']['rankLevel']
+                artifact['mainoption']['optionName'] = self.locale_jp[
+                    _Artifact['flat']['reliquaryMainstat']['mainPropId']]
+                artifact['mainoption']['value'] = _Artifact['flat']['reliquaryMainstat']['statValue']
+                # 聖遺物のサブオプションを設定
+                artifactscore = 0
+                for i, s in enumerate(_Artifact['flat']['reliquarySubstats']):
+                    artifact['suboption'].append({})
+                    artifact['suboption'][i]['optionName'] = self.locale_jp[s['appendPropId']]
+                    artifact['suboption'][i]['value'] = s['statValue']
+                    if artifact['suboption'][i]['optionName'] in [artifact_state[score_state], '会心ダメージ']:
+                        if artifact['suboption'][i]['optionName'] == '元素熟知':
+                            artifactscore += Decimal(artifact['suboption'][i]['value'] * 0.25)
+                        else:
+                            artifactscore += Decimal(artifact['suboption'][i]['value'])
+                    elif artifact['suboption'][i]['optionName'] in ['会心率']:
+                        artifactscore += Decimal(artifact['suboption'][i]['value'] * 2)
+                    artifacts_score[artifact_type_name[_Artifact['flat']['equipType']]] = Decimal(
+                        artifactscore).quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)
+                    # ここまで聖遺物のサブオプションの設定
+                artifact_total_score += Decimal(artifactscore)
+        # ここまで聖遺物のスコアを計算
+        artifacts_score['total'] = '{:.1f}'.format(
+            Decimal(artifact_total_score).quantize(Decimal('0.1'), rounding=ROUND_HALF_UP))  # 各聖遺物を合わせたスコア
+        artifacts_score = json.loads(json.dumps(artifacts_score, ensure_ascii=False, default=self.decimal_float))
+        artifacts = json.loads(json.dumps(artifacts, ensure_ascii=False, default=self.decimal_float))
+        with self.ArtifactFont() as Font:  # フォントファイルを一時フォルダへ展開後、フォントファイルを読み込み
+            artifact_font = lambda size: ImageFont.truetype(Font, size)
+            BaseImage = Image.open(BytesIO(self.artifact_base_image(character_element))).convert('RGBA')  # ベース画像の読み込み
+            # キャラクター画像の編集
+            if character_icon == 'UI_Gacha_AvatarImg_PlayerBoy.png':
+                character_image = Image.open(BytesIO(self.artifact_assets(character_icon))).convert('RGBA')
+            elif character_icon == 'UI_Gacha_AvatarImg_PlayerGirl.png':
+                character_image = Image.open(BytesIO(self.artifact_assets(character_icon))).convert('RGBA')
+            else:
+                character_image = Image.open(BytesIO(urllib.request.urlopen(
+                    urllib.request.Request('https://enka.network/ui/{}'.format(character_icon),
+                                           headers={'User-Agent': UsrAgn})).read())).convert(
+                    'RGBA')  # キャラクター画像をEnkaNetworkから取得
+            if character_icon == 'UI_Gacha_AvatarImg_PlayerBoy.png' or character_icon == 'UI_Gacha_AvatarImg_PlayerGirl.png':
+                if character_icon == 'UI_Gacha_AvatarImg_PlayerGirl.png':
+                    character_image = character_image.crop((555, 150, 1350, 650))  # キャラクターの画像を切り抜き
+                else:
+                    character_image = character_image.crop((0, 80, 1350, 650))  # キャラクターの画像を切り抜き
+            else:
+                character_image = character_image.crop((585, 165, 1350, 650))  # キャラクターの画像を切り抜き
+            character_image = character_image.resize((925, 620))  # キャラクターの画像をリサイズ
+            character_avatar_image_mask = character_image.copy()
+            character_paste = Image.new('RGBA', BaseImage.size, (255, 255, 255, 0))  # キャラクター画像を編集するための土台作り
+            character_paste.paste(character_image, (33, 12), mask=character_avatar_image_mask)  # キャラクター画像を土台と合成
+            character_status_blur = Image.open(BytesIO(self.artifact_assets('CharacterBlur'))).convert('RGBA')  # ぼかし画像
+            character_status_blur_paste = Image.new('RGBA', BaseImage.size, (255, 255, 255, 0))
+            character_status_blur.putalpha(56)  # 不透明度を設定
+            character_status_blur_paste.paste(character_status_blur, (56, 105))  # キャラクターのステータスの背景にぼかしを入れる
+            character_paste = Image.alpha_composite(character_paste,
+                                                    character_status_blur_paste)  # キャラクターの下に表示される好感度などのステータスの背景をブラーをかけてキャラクター画像と合成
+            BaseImage = Image.alpha_composite(BaseImage, character_paste)  # ベース画像とキャラクター画像を合成
+            # 武器画像の編集
+            weapon_image = Image.open(BytesIO(urllib.request.urlopen(
+                urllib.request.Request('https://enka.network/ui/{}'.format(weapon_icon),
+                                       headers={'User-Agent': UsrAgn})).read())).convert('RGBA').resize(
+                (128, 128))  # EnkaNetworkから武器の画像データを取得
+            weapon_image_paste = Image.new('RGBA', BaseImage.size, (255, 255, 255, 0))  # 武器の土台を作成
+            weapon_image_mask = weapon_image.copy()  # 武器の画像データをコピーしてマスクの作成
+            weapon_image_paste.paste(weapon_image, (1185, 60), mask=weapon_image_mask)  # 変更
+            BaseImage = Image.alpha_composite(BaseImage, weapon_image_paste)  # ベース画像と武器の画像を合成
+            # 武器のレアリティ画像の編集
+            try:  # 武器のレアリティ画像をRBGAに変換して読み込む
+                weapon_rarelity_image = Image.open(
+                    BytesIO(self.artifact_rarelity('{}'.format(weapon_rarelity)))).convert('RGBA')
+            except:  # もし、エラーが出るなら武器のレアリティ画像をそのまま読み込む
+                weapon_rarelity_image = Image.open(BytesIO(self.artifact_rarelity('{}'.format(weapon_rarelity))))
+            weapon_rarelity_image = weapon_rarelity_image.resize(
+                (int(weapon_rarelity_image.width * 0.97), int(weapon_rarelity_image.height * 0.97)))
+            weapon_rarelity_image_paste = Image.new('RGBA', BaseImage.size, (255, 255, 255, 0))  # 武器のレアリティ土台を作成
+            weapon_rarelity_image_mask = weapon_rarelity_image.copy()  # 武器のレアリティ画像からマスクを作成
+            weapon_rarelity_image_paste.paste(weapon_rarelity_image, (1182, 182), mask=weapon_rarelity_image_mask)  # 変更
+            BaseImage = Image.alpha_composite(BaseImage, weapon_rarelity_image_paste)  # ベース画像に武器のレアリティ画像を貼り付け
+            character_talent_base = Image.open(BytesIO(self.artifact_assets('TalentBack')))  # 天賦のベース画像
+            character_talent_paste = Image.new('RGBA', BaseImage.size, (255, 255, 255, 0))  # 天賦のベース画像を合成するためのベース画像
+            character_talent_base = character_talent_base.resize(
+                (int(character_talent_base.width / 1.5), int(character_talent_base.height / 1.5)))  # 天賦のベース画像をリサイズ
+            for i, t in enumerate(character_skill_icons):  # 天賦ベース画像とスキルアイコンとの合成
+                _talent_paste = Image.new('RGBA', character_talent_base.size,
+                                          (255, 255, 255, 0))  # 天賦のベース画像に合わせてベース画像を作成
+                _talent = Image.open(BytesIO(urllib.request.urlopen(
+                    urllib.request.Request('https://enka.network/ui/{}'.format(t),
+                                           headers={'User-Agent': UsrAgn})).read())).resize((50, 50)).convert(
+                    'RGBA')  # EnkaNetworkから各種天賦画像を取得
+                _talent_mask = _talent.copy()  # 取得した天賦画像でマスクの作成
+                _talent_paste.paste(_talent, (_talent_paste.width // 2 - 25, _talent_paste.height // 2 - 25),
+                                    mask=_talent_mask)  # 新規ベース画像に取得した天賦画像をリサイズして貼り付け
+                _talent_object = Image.alpha_composite(character_talent_base, _talent_paste)  # 天賦画像と新規天賦ベース画像を合成
+                character_talent_paste.paste(_talent_object, (1005, 10 + i * 86))  # 天賦画像を指定の位置で合成
+            BaseImage = Image.alpha_composite(BaseImage, character_talent_paste)
+            character_constellations_base = Image.open(BytesIO(self.artifact_constellation(character_element))).resize(
+                (90, 90)).convert('RGBA')  # キャラクターの凸数のベース画像
+            character_constellations_lock_base = Image.open(
+                BytesIO(self.artifact_constellation('{}LOCK'.format(character_element)))).convert(
+                'RGBA')  # キャラクターの凸数のロックされた画像のベース
+            character_constellations_lock_base_mask = character_constellations_lock_base.copy()  # ロックされた凸数のマスクを作成
+            character_constellations_paste = Image.new('RGBA', BaseImage.size, (255, 255, 255, 0))  # 凸数の新しいベース画像を作成
+            for c, t in enumerate(character_const_icons):
+                if c > int(character_const):  # キャラクターの凸数が「c」より小さいなら以下を実行
+                    character_constellations_paste.paste(character_constellations_lock_base, (1016, 235 + (c + 1) * 93),
+                                                         mask=character_constellations_lock_base_mask)  # キャラクターのロックされた凸数をベースへ貼り付け
+                else:  # キャラクターの凸数が「c」より大きいなら以下を実行
+                    _character_const = Image.open(BytesIO(urllib.request.urlopen(
+                        urllib.request.Request('https://enka.network/ui/{}'.format(t),
+                                               headers={'User-Agent': UsrAgn})).read())).convert('RGBA').resize(
+                        (45, 45))  # キャラクターの凸数に応じて凸の画像を取得
+                    _character_const_paste = Image.new('RGBA', character_constellations_base.size,
+                                                       (255, 255, 255, 0))  # 凸数のベース画像をベースに新しい画像を作成
+                    _character_const_mask = _character_const.copy()  # 凸数のマスクを作成
+                    _character_const_paste.paste(_character_const, (
+                    int(_character_const_paste.width / 2) - 25, int(_character_const_paste.height / 2) - 23),
+                                                 mask=_character_const_mask)  # キャラクターの凸数をマスクを指定しつつ合成
+                    _character_const_object = Image.alpha_composite(character_constellations_base,
+                                                                    _character_const_paste)  # 凸数のベース画像と上の合成した凸数の画像とさらに合成
+                    character_constellations_paste.paste(_character_const_object,
+                                                         (1010, 235 + (c + 1) * 93))  # 凸数を合成したデータを指定の位置に指定した間隔で貼り付け
+            BaseImage = Image.alpha_composite(BaseImage, character_constellations_paste)  # ベース画像へ凸数を反映
+            DR = ImageDraw.Draw(BaseImage)  # ベース画像にテキストを埋め込み
+            DR.text((45, 50), character_name, font=artifact_font(48))  # キャラクター名を書き込み
+            character_levellength = DR.textlength('Lv.{}'.format(character_level),
+                                                  font=artifact_font(25))  # キャラクターのレベルの文章の長さを取得
+            character_friendShiplength = DR.textlength(character_fav_rate,
+                                                       font=artifact_font(25))  # キャラクターの好感度の文章の長さを取得
+            DR.text((60, 105), 'Lv.{}'.format(character_level), font=artifact_font(25))  # キャラクターのレベルを書き込み
+            DR.rounded_rectangle(
+                (60 + character_levellength + 5, 74, 77 + character_levellength + character_friendShiplength, 102),
+                radius=0, outline=None, width=0)  # 好感度をレベルの文の長さに間隔を開けてから記入
+            character_friendShipicon = Image.open(BytesIO(self.artifact_assets('Love'))).convert(
+                'RGBA')  # キャラクターの好感度アイコンを読み込み
+            character_friendShipicon = character_friendShipicon.resize(
+                (int(character_friendShipicon.width * (24 / character_friendShipicon.height)), 24))  # 好感度アイコンをリサイズ
+            character_friendShipicon_mask = character_friendShipicon.copy()  # 好感度アイコンのマスクを作成
+            BaseImage.paste(character_friendShipicon, (74 + int(character_levellength), 108),
+                            mask=character_friendShipicon_mask)  # ベース画像に好感度アイコンを貼り付け
+            DR.text((103 + character_levellength, 106), character_fav_rate, font=artifact_font(25))  # 好感度を書き込み
+            DR.text((1033, 86), 'Lv.{}'.format(character_talent_normal), font=artifact_font(17),
+                    fill='aqua' if int(character_talent_normal) >= 10 else None)  # 通常天賦の書き込み
+            DR.text((1033, 176), 'Lv.{}'.format(character_talent_skill), font=artifact_font(17),
+                    fill='aqua' if int(character_talent_skill) >= 10 else None)  # スキル天賦の書き込み
+            DR.text((1033, 264), 'Lv.{}'.format(character_talent_explosion), font=artifact_font(17),
+                    fill='aqua' if int(character_talent_explosion) >= 10 else None)  # 元素爆発天賦の書き込み
+            character_status_json = {'HP': character_hp, '攻撃力': character_attack_rate,
+                                     '防御力': character_defence_rate, '元素熟知': character_element_mastery,
+                                     '会心率': character_critical_rate, '会心ダメージ': character_critical_damage_rate,
+                                     '元素チャージ効率': character_charge_efficiency,
+                                     character_element_buff_name: character_element_buff_value}  # キャラクターのステータスをまとめたもの
+            character_status_base_json = {'HP': character_base_hp, '攻撃力': character_base_attack,
+                                          '防御力': character_base_defence}  # キャラクターの基礎ステータスをまとめたもの
+
+            def genbasetext(state):
+                sumv = character_status_json[state]
+                plusv = sumv - character_status_base_json[state]
+                basev = character_status_base_json[state]
+                return f"+{format(plusv, ',')}", f"{format(basev, ',')}", DR.textlength(f"+{format(plusv, ',')}",
+                                                                                        font=artifact_font(
+                                                                                            12)), DR.textlength(
+                    f"{format(basev, ',')}", font=artifact_font(12))
+
+            Disper = ['会心率', '会心ダメージ', '攻撃パーセンテージ', '防御パーセンテージ', 'HPパーセンテージ', '水元素ダメージ', '物理ダメージ',
+                      '風元素ダメージ', '岩元素ダメージ', '炎元素ダメージ', '与える治癒効果', '与える治療効果', '雷元素ダメージ',
+                      '氷元素ダメージ', '草元素ダメージ', '与える治癒効果', '元素チャージ効率']
+            StateOption = ('HP', '攻撃力', '防御力', '元素熟知', '会心率', '会心ダメージ', '元素チャージ効率')
+            for k, v in character_status_json.items():  # 元素ダメージごとの書き込み
+                if k in ['氷元素ダメージ', '水元素ダメージ', '岩元素ダメージ', '草元素ダメージ', '風元素ダメージ', '炎元素ダメージ', '物理ダメージ',
+                         '与える治癒効果', '雷元素ダメージ'] and v == 0:
+                    k = '{}元素ダメージ'.format(character_element)
+                try:
+                    i = StateOption.index(k)
+                except:
+                    i = 7
+                    DR.text((1261, 713), k, font=artifact_font(40))
+                    ElementOpIcon = Image.open(BytesIO(self.artifact_emotes(k))).resize((40, 40))
+                    ElementOpIconPaste = Image.new('RGBA', BaseImage.size, (255, 255, 255, 0))
+                    ElementOpIconPaste.paste(ElementOpIcon, (1199, 713))
+                    BaseImage = Image.alpha_composite(BaseImage, ElementOpIconPaste)
+                    DR = ImageDraw.Draw(BaseImage)
+                if k not in Disper:
+                    character_state_len = DR.textlength(format(v, ","), artifact_font(40))
+                    DR.text((1830 - character_state_len, 286 + i * 61), format(v, ","), font=artifact_font(40))
+                else:
+                    if k in ['氷元素ダメージ', '水元素ダメージ', '岩元素ダメージ', '草元素ダメージ', '風元素ダメージ', '炎元素ダメージ',
+                             '物理ダメージ', '与える治癒効果', '雷元素ダメージ']:
+                        character_state_len = DR.textlength(f'{float(v)}%', artifact_font(40))
+                        DR.text((1830 - character_state_len, 271 + i * 63), f'{float(v)}%', font=artifact_font(40))
+                    else:
+                        character_state_len = DR.textlength(f'{float(v)}%', artifact_font(40))
+                        DR.text((1830 - character_state_len, 270 + i * 62), f'{float(v)}%', font=artifact_font(40))
+                if k in ['HP', '防御力', '攻撃力']:
+                    HPPls, HPBase, HPSize, HPBSize = genbasetext(k)
+                    DR.text((1830 - HPSize, 335 + i * 59), HPPls, fill=(0, 255, 0, 180), font=artifact_font(12))
+                    DR.text((1830 - HPSize - HPBSize, 335 + i * 59), HPBase, font=artifact_font(12),
+                            fill=(255, 255, 255, 180))
+            DR.text((1390, 47), weapon_name, font=artifact_font(30))
+            weapon_length = DR.textlength(f'Lv.{weapon_level}', font=artifact_font(24))
+            DR.rounded_rectangle((1582, 80, 1582 + weapon_length + 4, 108), radius=0, outline=None, width=0)
+            DR.text((1390, 82), f'Lv.{weapon_level}', font=artifact_font(24))
+            w_baseAttack = Image.open(BytesIO(self.artifact_emotes('基礎攻撃力'))).convert('RGBA').resize((23, 23))
+            w_baseAttack_mask = w_baseAttack.copy()
+            BaseImage.paste(w_baseAttack, (1395, 120), mask=w_baseAttack_mask)
+            DR.text((1420, 118), '基礎攻撃力  {}'.format(weapon_attack_rate), font=artifact_font(23))  # 武器の基礎攻撃力を記載
+            OptionMap = {'攻撃パーセンテージ': '攻撃%', '防御パーセンテージ': '防御%', '元素チャージ効率': '元チャ効率', 'HPパーセンテージ': 'HP%'}
+            if weapon_sub_name != None:  # 武器のサブ名が有効なら以下を実行
+                w_baseAttack = Image.open(BytesIO(self.artifact_emotes(weapon_sub_name))).convert('RGBA').resize(
+                    (23, 23))
+                w_baseAttack_mask = w_baseAttack.copy()
+                BaseImage.paste(w_baseAttack, (1395, 155), mask=w_baseAttack_mask)
+                try:
+                    DR.text((1420, 153),
+                            f'{OptionMap.get(weapon_sub_name) or weapon_sub_name}  {str(weapon_sub_value) + "%" if weapon_sub_name in Disper else format(weapon_sub_value, ",")}',
+                            font=artifact_font(23))
+                except:
+                    DR.text((1420, 153),
+                            f'{weapon_sub_name}  {str(weapon_sub_value) + "%" if weapon_sub_name in Disper else format(weapon_sub_value, ",")}',
+                            font=artifact_font(23))
+            DR.rounded_rectangle((1430, 45, 1470, 70), radius=0, outline=None, width=0)
+            DR.text((1180, 46), f'R{weapon_constellations}', font=artifact_font(24))
+            scorelen = DR.textlength(f'{artifacts_score["total"]}', artifact_font(75))  # 聖遺物スコアの文字数を計算
+            DR.text((440 - scorelen // 2, 723), str(artifacts_score["total"]),
+                    font=artifact_font(100))  # 聖遺物スコアを100pixelで表記
+            score_conversion_len = DR.textlength('{}換算'.format(artifacts_score["state"]),
+                                                 font=artifact_font(24))  # 換算表記の文字数を計算
+            DR.text((916 - score_conversion_len, 840), '{}換算'.format(artifacts_score["state"]),
+                    font=artifact_font(24))  # 聖遺物を評価する方式を表記
+            # トータルスコアのランク決め
+            if float(artifacts_score["total"]) >= 220:
+                scoreEv = Image.open(BytesIO(self.artifact_grades('SS')))
+            elif float(artifacts_score["total"]) >= 200:
+                scoreEv = Image.open(BytesIO(self.artifact_grades('S')))
+            elif float(artifacts_score["total"]) >= 180:
+                scoreEv = Image.open(BytesIO(self.artifact_grades('A')))
+            else:
+                scoreEv = Image.open(BytesIO(self.artifact_grades('B')))
+            scoreEv = scoreEv.convert('RGBA').resize((scoreEv.width // 8, scoreEv.height // 8))
+            evmask = scoreEv.copy()
+            BaseImage.paste(scoreEv, (850, 708), mask=evmask)
+            ArtifactType = []
+            for i, part in enumerate(['flower', "wing", "clock", "cup", "crown"]):  # 聖遺物の画像を合成していく
+                artifact_details = artifacts[part]
+                artifact_icons = artifacts[part]['icon']
+                if artifact_icons == '':
+                    continue
+                else:
+                    ArtifactType.append(artifact_details['type'])
+                    artifact_preview_paste = Image.new('RGBA', BaseImage.size, (255, 255, 255, 0))  # 聖遺物の画像の土台を作成
+                    artifact_preview = Image.open(BytesIO(urllib.request.urlopen(
+                        urllib.request.Request('https://enka.network/ui/{}'.format(artifact_icons),
+                                               headers={'User-Agent': UsrAgn})).read())).convert('RGBA').resize(
+                        (256, 256))  # 聖遺物の画像をEnakNetworkから取得
+                    artifact_preview_Enhance = ImageEnhance.Brightness(artifact_preview)
+                    artifact_preview = artifact_preview_Enhance.enhance(0.6)
+                    artifact_preview_mask = artifact_preview.copy()
+                    artifact_preview.putalpha(204)
+                    if part in ['flower']:  # 聖遺物の花をベースに貼り付け
+                        concurrent.futures.ThreadPoolExecutor(os.cpu_count() * 99999).submit(
+                            artifact_preview_paste.paste, artifact_preview, (50 + 420 * i, 901),
+                            mask=artifact_preview_mask)
+                    elif part in ['wing']:  # 聖遺物の羽をベースに貼り付け
+                        concurrent.futures.ThreadPoolExecutor(os.cpu_count() * 99999).submit(
+                            artifact_preview_paste.paste, artifact_preview, (-12 + 420 * i, 906),
+                            mask=artifact_preview_mask)
+                    elif part in ['cup']:  # 聖遺物の盃をベースに貼り付け
+                        concurrent.futures.ThreadPoolExecutor(os.cpu_count() * 99999).submit(
+                            artifact_preview_paste.paste, artifact_preview, (-105 + 420 * i, 896),
+                            mask=artifact_preview_mask)
+                    elif part in ['crown']:  # 聖遺物の冠をベースに貼り付け
+                        concurrent.futures.ThreadPoolExecutor(os.cpu_count() * 99999).submit(
+                            artifact_preview_paste.paste, artifact_preview, (-140 + 420 * i, 901),
+                            mask=artifact_preview_mask)
+                    else:
+                        concurrent.futures.ThreadPoolExecutor(os.cpu_count() * 99999).submit(
+                            artifact_preview_paste.paste, artifact_preview, (-35 + 420 * i, 916),
+                            mask=artifact_preview_mask)
+                    BaseImage = Image.alpha_composite(BaseImage, artifact_preview_paste)
+                    DR = ImageDraw.Draw(BaseImage)
+                    MainOption = artifact_details['mainoption']['optionName']  # 聖遺物のメインオプションを取得
+                    try:
+                        MainOptionLen = DR.textlength(OptionMap[MainOption] or MainOption,
+                                                      font=artifact_font(29))  # 聖遺物のメインオプションの文字長を計算
+                    except:
+                        MainOptionLen = DR.textlength(MainOption, font=artifact_font(29))  # 聖遺物のメインオプションの文字長を計算
+                    try:
+                        DR.text((375 + i * 373 - int(MainOptionLen), 941), OptionMap[MainOption] or MainOption,
+                                font=artifact_font(29))  # メインオプションを書き込み
+                    except:
+                        DR.text((375 + i * 373 - int(MainOptionLen), 941), MainOption,
+                                font=artifact_font(29))  # メインオプションを書き込み
+                    MainOption_icon = Image.open(BytesIO(self.artifact_emotes(MainOption))).convert('RGBA').resize(
+                        (35, 35))  # メインオプションのアイコンを取得
+                    MainOption_icon_mask = MainOption_icon.copy()  # メインオプションのアイコンのマスクを作成
+                    BaseImage.paste(MainOption_icon, (335 + i * 373 - int(MainOptionLen), 941),
+                                    mask=MainOption_icon_mask)
+                    MainOptionValue = artifact_details['mainoption']['value']
+                    if MainOption in Disper:
+                        MainOptionValueSize = DR.textlength('{}%'.format(float(MainOptionValue)), artifact_font(49))
+                        DR.text((375 + i * 373 - MainOptionValueSize, 971), '{}%'.format(float(MainOptionValue)),
+                                font=artifact_font(49))
+                    else:
+                        MainOptionValueSize = DR.textlength(format(MainOptionValue, ","), artifact_font(49))
+                        DR.text((375 + i * 373 - MainOptionValueSize, 971), format(MainOptionValue, ","),
+                                font=artifact_font(49))
+                    artifactLevelLen = DR.textlength('+{}'.format(artifact_details['level']),
+                                                     artifact_font(21))  # 聖遺物のレベルの文字の長さを計算
+                    DR.rounded_rectangle((373 + i * 373 - int(artifactLevelLen), 1023, 375 + i * 373, 771), radius=0,
+                                         outline=None, width=0)
+                    DR.text((374 + i * 373 - artifactLevelLen, 1024), '+{}'.format(artifact_details['level']),
+                            font=artifact_font(21))  # 聖遺物のレベルを記載
+                    if artifact_details['level'] == 20 and artifact_details[
+                        'rarelity'] == 5:  # 聖遺物のレベルが２０でかつレアリティが５なら以下を実行
+                        art_c_data = {}
+                        for art in artifact_details['suboption']:  # サブオプションの計算
+                            if art['optionName'] in Disper:
+                                art_c_data[art['optionName']] = '{}'.format(float(art['value']))
+                            else:
+                                art_c_data[art['optionName']] = '{}'.format(art['value'])
+                        PSB = self.option_calculation(art_c_data)
+                    if len(artifact_details['suboption']) == 0:
+                        continue
+                    for a, arts in enumerate(artifact_details['suboption']):
+                        artifact_suboption = arts['optionName']
+                        artifact_subvalue = arts['value']
+                        if artifact_suboption in ['HP', '攻撃力', '防御力']:
+                            try:
+                                DR.text((79 + 373 * i, 1109 + 50 * a),
+                                        OptionMap[artifact_suboption] or artifact_suboption, font=artifact_font(25),
+                                        fill=(255, 255, 255, 190))
+                            except:
+                                DR.text((79 + 373 * i, 1109 + 50 * a), artifact_suboption, font=artifact_font(25),
+                                        fill=(255, 255, 255, 190))
+                        else:
+                            try:
+                                DR.text((79 + 373 * i, 1109 + 50 * a),
+                                        OptionMap[artifact_suboption] or artifact_suboption, font=artifact_font(25))
+                            except:
+                                DR.text((79 + 373 * i, 1109 + 50 * a), artifact_suboption, font=artifact_font(25))
+                        artifact_suboption_icon = Image.open(BytesIO(self.artifact_emotes(artifact_suboption))).convert(
+                            'RGBA').resize((30, 30))
+                        artifact_suboption_icon_mask = artifact_suboption_icon.copy()
+                        BaseImage.paste(artifact_suboption_icon, (44 + 373 * i, 1109 + 50 * a),
+                                        mask=artifact_suboption_icon_mask)
+                        if artifact_suboption in Disper:
+                            artifact_suboption_size = DR.textlength('{}%'.format(float(artifact_subvalue)),
+                                                                    artifact_font(25))
+                            DR.text((375 + i * 373 - artifact_suboption_size, 1109 + 50 * a),
+                                    '{}%'.format(float(artifact_subvalue)), font=artifact_font(25))
+                        else:
+                            artifact_suboption_size = DR.textlength(format(artifact_subvalue, ","), artifact_font(25))
+                            if artifact_suboption in ['防御力', '攻撃力', 'HP']:
+                                DR.text((375 + i * 373 - artifact_suboption_size, 1109 + 50 * a),
+                                        format(artifact_subvalue, ","), font=artifact_font(25),
+                                        fill=(255, 255, 255, 190))
+                            else:
+                                DR.text((375 + i * 373 - artifact_suboption_size, 1109 + 50 * a),
+                                        format(artifact_subvalue, ","), font=artifact_font(25), fill=(255, 255, 255))
+                        if artifact_details['level'] == 20 and artifact_details[
+                            'rarelity'] == 5:  # 聖遺物のレベルが２０でかつレアリティが５なら以下を実行
+                            artifact_stretch = DR.textlength("+".join(map(str, PSB[a])), font=artifact_font(11))
+                            DR.text((375 + i * 373 - artifact_stretch, 1142 + 50 * a), "+".join(map(str, PSB[a])),
+                                    fill=(255, 255, 255, 160), font=artifact_font(11))
+                    artifactsScore = float(artifacts_score[part])  # 各聖遺物のスコア
+                    artifactsScoreLen = DR.textlength(str(artifactsScore), artifact_font(36))
+                    DR.text((298 + i * 373 - artifactsScoreLen, 1350), str(artifactsScore), font=artifact_font(36))
+                    DR.text((211 + i * 373 - artifactsScoreLen, 1358), 'Score', font=artifact_font(27),
+                            fill=(160, 160, 160))
+                    PRefer = {'total': {'SS': 220, 'S': 200, 'A': 180}, 'flower': {'SS': 50, 'S': 45, 'A': 40},
+                              'wing': {'SS': 50, 'S': 45, 'A': 40}, 'clock': {'SS': 45, 'S': 40, 'A': 35},
+                              'cup': {'SS': 45, 'S': 40, 'A': 37}, 'crown': {'SS': 40, 'S': 35, 'A': 30}}
+                    if artifactsScore >= PRefer[part]['SS']:
+                        artifact_score_image = Image.open(BytesIO(self.artifact_grades('SS')))
+                    elif artifactsScore >= PRefer[part]['S']:
+                        artifact_score_image = Image.open(BytesIO(self.artifact_grades('S')))
+                    elif artifactsScore >= PRefer[part]['A']:
+                        artifact_score_image = Image.open(BytesIO(self.artifact_grades('A')))
+                    else:
+                        artifact_score_image = Image.open(BytesIO(self.artifact_grades('B')))
+                    artifact_score_image = artifact_score_image.convert('RGBA').resize(
+                        (artifact_score_image.width // 11, artifact_score_image.height // 11))
+                    artifact_score_image_mask = artifact_score_image.copy()
+                    BaseImage.paste(artifact_score_image, (75 + 373 * i, 1352), mask=artifact_score_image_mask)
+            artifact_set_bouns = Counter([x for x in ArtifactType if ArtifactType.count(x) >= 2])
+            for i, (n, q) in enumerate(artifact_set_bouns.items()):
+                if len(artifact_set_bouns) == 2:
+                    DR.text((1340, 810 + i * 33), n, fill=(0, 255, 0), font=artifact_font(23))
+                    DR.text((1605, 807 + i * 33), '{}'.format(q), font=artifact_font(30))
+                elif len(artifact_set_bouns) == 1:
+                    DR.text((1340, 828), n, fill=(0, 255, 0), font=artifact_font(23))
+                    DR.text((1605, 826), '{}'.format(q), font=artifact_font(30))
+            os.makedirs(os.path.join(os.getcwd(), 'ArtifacterImageOutput'), exist_ok=True)
+            BaseImage.save(os.path.join(os.getcwd(), 'ArtifacterImageOutput', 'buildcard.png'))
+            concurrent.futures.ThreadPoolExecutor().submit(console.quicklook,
+                                                           os.path.join(os.getcwd(), 'ArtifacterImageOutput',
+                                                                        'buildcard.png'))
+
+    def main(self):
+        if len(self.uid) == 9:
+            player_info = self.playerinfo()
+            if 'showAvatarInfoList' in player_info:
+                try:
+                    v['IconView'].image = ui.Image.from_data(urllib.request.urlopen(urllib.request.Request(
+                        'https://enka.network/ui/{}.png'.format(
+                            self.character_pfps_json()['{}'.format(self.playerinfo()['profilePicture']['id'])][
+                                'iconPath'].replace('_Circle', '')), headers={'User-Agent': UsrAgn})).read())
+                except:
+                    v['IconView'].image = ui.Image.from_data(urllib.request.urlopen(urllib.request.Request(
+                        'https://enka.network/ui/{}'.format('{}.png'.format(
+                            self.characters_json['{}'.format(self.playerinfo()['profilePicture']['avatarId'])][
+                                'SideIconName'].replace('UI_AvatarIcon_Side_', 'UI_AvatarIcon_'))),
+                        headers={'User-Agent': UsrAgn})).read())
+                v['UserName'].text = 'プレイヤー名:{}'.format(player_info['nickname'])
+                v['WorldLank'].text = '冒険ランク{}'.format(player_info['level'])
+                try:
+                    if v['characterList'].data_source.items[0] == '':
+                        del v['characterList'].data_source.items[0]
+                except:
+                    pass
+                if not ''.join(v['characterList'].data_source.items) == '':
+                    try:
+                        CL = [0]
+                        for _i in CL:
+                            for _c in range(len(v['characterList'].data_source.items)):
+                                try:
+                                    del v['characterList'].data_source.items[_c]
+                                except:
+                                    CL.append(_i + 1)
+                            if ''.join(v['characterList'].data_source.items) == '':
+                                break
+                    except:
+                        pass
+                avatar_lists = player_info['showAvatarInfoList']
+                v['characterList'].data_source.items = ['{} \tLv{}'.format(avatar['name'], avatar['level']) for
+                                                        index, avatar in enumerate(avatar_lists)]
+                AvatarList[0:] = avatar_lists
+
+    def start_buildcrate(self, data, score_state):
+        self.create_buildcard(data, score_state)
+
+
+def main(_):
+    global ArtifactFunc
+    ArtifactFunc = Artifacter(v['UID'].text)
+    concurrent.futures.ThreadPoolExecutor().submit(ArtifactFunc.main)
+
+def SelectRow(___):
+    _, sted = v['characterList'].selected_row
+    SelectedRow[0] = sted + 1
+
+def SwitchSelecter(___):
+    if v['HP'].value and CheckHP[0] == '0':
+        score_state = 'HP'
+        v['ATK'].value = False
+        v['DEF'].value = False
+        v['Chage'].value = False
+        v['Element'].value = False
+        CheckHP[0] = '1'
+        CheckElement[0] = '0'
+    elif v['HP'].value:
+        score_state = 'HP'
+        v['ATK'].value = False
+        v['DEF'].value = False
+        v['Chage'].value = False
+        v['Element'].value = False
+    if v['ATK'].value and CheckATK[0] == '0':
+        score_state = '攻撃'
+        v['HP'].value = False
+        v['DEF'].value = False
+        v['Chage'].value = False
+        v['Element'].value = False
+        CheckATK[0] = '1'
+        CheckHP[0] = '0'
+    elif v['ATK'].value:
+        score_state = '攻撃'
+        v['HP'].value = False
+        v['DEF'].value = False
+        v['Chage'].value = False
+        v['Element'].value = False
+    if v['DEF'].value and CheckDEF[0] == '0':
+        score_state = '防御'
+        v['ATK'].value = False
+        v['HP'].value = False
+        v['Chage'].value = False
+        v['Element'].value = False
+        CheckDEF[0] = '1'
+        CheckATK[0] = '0'
+    elif v['DEF'].value:
+        score_state = '防御'
+        v['ATK'].value = False
+        v['HP'].value = False
+        v['Chage'].value = False
+        v['Element'].value = False
+    if v['Chage'].value and CheckChage[0] == '0':
+        score_state = 'チャージ'
+        v['ATK'].value = False
+        v['DEF'].value = False
+        v['HP'].value = False
+        v['Element'].value = False
+        CheckChage[0] = '1'
+        CheckDEF[0] = '0'
+    elif v['Chage'].value:
+        score_state = 'チャージ'
+        v['ATK'].value = False
+        v['DEF'].value = False
+        v['HP'].value = False
+        v['Element'].value = False
+    if v['Element'].value and CheckElement[0] == '0':
+        score_state = '元素熟知'
+        v['ATK'].value = False
+        v['DEF'].value = False
+        v['Chage'].value = False
+        v['HP'].value = False
+        CheckElement[0] = '1'
+        CheckChage[0] = '0'
+    elif v['Element'].value:
+        score_state = '元素熟知'
+        v['ATK'].value = False
+        v['DEF'].value = False
+        v['Chage'].value = False
+        v['HP'].value = False
+
+def CreateCard(___):
+    if not str(SelectedRow[0]) == '':
+        avatar_id = AvatarList[int(SelectedRow[0]) - 1]['avatarId']
+        data = ArtifactFunc.full_playerinfo(avatar_id)
+        if len(data) > 0:
+            if v['HP'].value:
+                score_state = 'HP'
+                v['ATK'].value = False
+                v['DEF'].value = False
+                v['Chage'].value = False
+                v['Element'].value = False
+            if v['ATK'].value:
+                score_state = '攻撃'
+                v['HP'].value = False
+                v['DEF'].value = False
+                v['Chage'].value = False
+                v['Element'].value = False
+            if v['DEF'].value:
+                score_state = '防御'
+                v['ATK'].value = False
+                v['HP'].value = False
+                v['Chage'].value = False
+                v['Element'].value = False
+            if v['Chage'].value:
+                score_state = 'チャージ'
+                v['ATK'].value = False
+                v['DEF'].value = False
+                v['HP'].value = False
+                v['Element'].value = False
+            if v['Element'].value:
+                score_state = '元素熟知'
+                v['ATK'].value = False
+                v['DEF'].value = False
+                v['Chage'].value = False
+                v['HP'].value = False
+        ArtifactFunc.start_buildcrate(data, score_state)
+
+import ui
+v = ui.load_view_str(ArtifactUISheet)
+v['IconView'].image = ui.Image.from_data(base64.b64decode('iVBORw0KGgoAAAANSUhEUgAAAfQAAAH0EAYAAACbRgPJAAAAAXNSR0IArs4c6QAAAMJlWElmTU0AKgAAAAgABgESAAMAAAABAAEAAAEaAAUAAAABAAAAVgEbAAUAAAABAAAAXgEoAAMAAAABAAIAAAExAAIAAAARAAAAZodpAAQAAAABAAAAeAAAAAAAAABIAAAAAQAAAEgAAAABUGl4ZWxtYXRvciAyLjguMwAAAASQBAACAAAAFAAAAK6gAQADAAAAAQABAACgAgAEAAAAAQAAAfSgAwAEAAAAAQAAAfQAAAAAMjAyMzowMzoyMSAwMTowMzo1NQACibJgAAAACXBIWXMAAAsTAAALEwEAmpwYAAADrmlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNi4wLjAiPgogICA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPgogICAgICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgICAgICAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyIKICAgICAgICAgICAgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIgogICAgICAgICAgICB4bWxuczpleGlmPSJodHRwOi8vbnMuYWRvYmUuY29tL2V4aWYvMS4wLyI+CiAgICAgICAgIDx0aWZmOllSZXNvbHV0aW9uPjcyMDAwMC8xMDAwMDwvdGlmZjpZUmVzb2x1dGlvbj4KICAgICAgICAgPHRpZmY6WFJlc29sdXRpb24+NzIwMDAwLzEwMDAwPC90aWZmOlhSZXNvbHV0aW9uPgogICAgICAgICA8dGlmZjpSZXNvbHV0aW9uVW5pdD4yPC90aWZmOlJlc29sdXRpb25Vbml0PgogICAgICAgICA8dGlmZjpPcmllbnRhdGlvbj4xPC90aWZmOk9yaWVudGF0aW9uPgogICAgICAgICA8eG1wOkNyZWF0b3JUb29sPlBpeGVsbWF0b3IgMi44LjM8L3htcDpDcmVhdG9yVG9vbD4KICAgICAgICAgPHhtcDpDcmVhdGVEYXRlPjIwMjMtMDMtMjFUMDE6MDM6NTUrMDk6MDA8L3htcDpDcmVhdGVEYXRlPgogICAgICAgICA8eG1wOk1ldGFkYXRhRGF0ZT4yMDIzLTAzLTIxVDAxOjEwOjE3KzA5OjAwPC94bXA6TWV0YWRhdGFEYXRlPgogICAgICAgICA8ZXhpZjpQaXhlbFhEaW1lbnNpb24+NTAwPC9leGlmOlBpeGVsWERpbWVuc2lvbj4KICAgICAgICAgPGV4aWY6UGl4ZWxZRGltZW5zaW9uPjUwMDwvZXhpZjpQaXhlbFlEaW1lbnNpb24+CiAgICAgIDwvcmRmOkRlc2NyaXB0aW9uPgogICA8L3JkZjpSREY+CjwveDp4bXBtZXRhPgpxGZUdAABAAElEQVR4Aey9CZwkRZn+H5lV1T3d0z0Xc3HMwSWMIrcioiIqHrvoCuOBwCK6qOjquutHV1n/67mLyvpfVFDWXRUWEAWRFcEDEQU5BIThUhhgGBiOYe6enr67qrp/vvH6UF3VWdWVVVlZkVXP+/nMRGdWZMQb38juiiffyAhjaCRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiRAAiTQHAJec6plrSRAAiRAAiSQLAKT1tJp9Xrx4uJ0yRI9RrpokR7Pn6/pvHnB6dy5er67W9OuruJjnO/s1POplKbwA8dI9VNj8nn9CWkuV3w8NqbHw8OajowUH+P8rl16vq9P0507i1Oc37pVz2/eXJxu2aLHW7Z41uCHnuX/JEACJEACJEACxQQo0It58IgESIAESKBFCajA7ujQ5q1cqel++xWnK1bo8bJlmi5fXny8dKke+76m/L86AhMTmm/TJk2ffro4feopPd6wQdN164rTJ59UgT8+ruf5PwmQAAmQAAm0JgEK9NbsV7aKBEiABFqegAruOXO0oS98YXH6ohcVHx94oB5DeJdGnPVT/u8qAcwEgLBfu1Y9feghTf/0p+Ljhx5SQY8ZAK62i36RAAmQAAmQQDEBCvRiHjwiARIgARJoMgEV3pgqfsQR6s5hhwWn++zTZHdZvdME1q9X9+69Nzhds0aFPCL7TjeGzpEACZAACbQBAQr0NuhkNpEESIAEXCBQPMUcwvtlL1PfjjpKUxxjqrkLntOH1ieAqfV33KFtvfNOTXF8zz2cYt/6dwFbSAIkQAIuEKBAd6EX6AMJkAAJtAABFeBY5Ozoo7VJr3qVpsceqymEOPK1QMPZhDYggEX0INxvvlkb/bvfafr736uAR742QMImkgAJkAAJNIQABXpDsLJQEiABEmg9AirAsTgappwff7y29PWv1/TlL9cUq463Hge2iASmE8Didbfdpp/dcIOmv/qVpvfeqwIei+VNL4FnSIAESIAESEAIUKDzPiABEiABEigioEIc24O98Y364QknaPqGN2i6225FF/GABEigAoHt2/XD66/X9LrrNP3lL1W4Y7u6CkXwIxIgARIggbYgQIHeFt3MRpIACZDAdAIqxLHI2kknaY43v1nTY47RlKudTyfHMyQQFQGsTo/I+7XXaslXX63CHYvcRVUfyyEBEiABEnCdAAW66z1E/0iABEigTgIqxLHN2OrVWhxSTFWvsxJeTgIk0AAC992nhf74x5pedZUKd2wz14AqWSQJkAAJkEBTCVCgNxU/KycBEiCB6AioEF++XEt817s0PeUUTQ8+OLqaWBIJkEBzCTzwgNZ/+eWa/uAHKtyfeqq5frF2EiABEiCBeglQoNdLkNeTAAmQQMwEVIjPnavVnnyypqedpimmpnv8+x5zv7A6EmgegclJrRtT5S+7TI9/+EMV7v39zfONNZMACZAACYQhwAFcGFrMSwIkQAIxElAhDqH9mtdo1e99r6YnnqgptyuLsUtYFQkkjAC2ffu//1PHL7pI0xtvVOEOYZ+wZtFdEiABEmhhAhToLdy5bBoJkECyCKggX7JEvT7zTE3f9z5NV6xIVmvoLQmQgLsENmxQ3/7nfzT97ndVsG/a5K7P9IwESIAE2oMABXp79DNbSQIk4CABFeTHHaeunXWWpoiMZzIOukyXSIAEWpJANqvN+slPNL3wQhXsv/1tSzaXjSIBEiABhwlQoDvcOXSNBEigNQioEJ81S1uDd8U/+lE9Puig1mglW0ECJNB6BP70J23T176m6WWXqXAfHW29trJFJEACJOAGAQp0N/qBXpAACbQQARXku++uTfr7v9f0Ax/QdOHCFmoqmzKFwLA1Yx6zZszT1ozZZM2YzdaM2W7NmEFrxgxZM2bEmjFj1ozJWjNmwpoxeWvG6P01PZ3iSqgfVXAZU5qmrBnjWzMmY82YTmvGdFkzZrY1Y3qsGbObNWOWWDNmqTVjllkzZn9rxnRbC+UqMzedwLZt6sK3v63pN7+p981zzzXdNTpAAiRAAi1CgAK9RTqSzSABEmgeARVM+++vHnziE5qefrqmnZ3N84w1hyEwbs2YP1oz5k/WjHncWkFw91krCGxcByEdps52zgvh32GtIPDnWysI+n2tGfMia8YcZM0YXNfODJvf9rEx9eHSSzU991wV7I891nzf6AEJkAAJJJMABXoy+41ekwAJNJGACvLDD1cXzj5b05NO0tT3m+gaq55CAIL5LmvG3G3NmEesGbPRmjE7rRUi1lOK4I8OE0BEf541Y/awZswB1ow50poxL7VWmAngcJNawLWJCW0EVo0/5xwV7GvWtEDj2AQSIAESiIUABXosmFkJCZBAkgmoID/4YG3D5z+v6VvfmuQ2Jdl3CO/fWzPmd9YKwhtTyjHlPMltpe/REcCUeky5h5B/lTVjjrZGIR8d8aklYfG5z35WBfsDD0z9lD+TAAmQAAkUCFCgF1jwJxIgARKwBFSQr1qlOD73OU3f/nZNsS+5HvH/6An0WzPmZ9aMgRB/wpoxA9YK72BH7wFLbEcCKhyN6bVmzN7WCsL9r60ZM9daOxKKos3Yd/1HP9LSPvc55f7ww1GUzjJIgARIoBUIUKC3Qi+yDSRAAnURUEG+335ayGc/q+kpp2jKKet1wQ24GIuj/dRaIQIOAY7F0gIu5SkSaDoBLI4HAY8I/FusFd6lb7qjiXAAU+Ivv1zd/fznVbCvW5cI9+kkCZAACTSAAAV6A6CySBIgAbcJqCBfsUK9/MxnNMWibum0294nx7vbrBlzrbXComuIkCenJfSUBKongAg7FrV7szVjjrFWfTntmTOX03ZfcommX/iCCvYNG9qTB1tNAiTQjgQo0Nux19lmEmgzAirIe3u12f/yL5r+0z9pylXWa70dRq0Zc7U1Y35tzRhEwrEtWK3l8zoSaCUC2LZuH2vGvNaaMSdZM2aWtVZqcRRtwSrx552npWHRuYGBKEpnGSRAAiTgIgEKdBd7hT6RAAnURUAFOd4VP+MMLeycczRdurSuwtvwYmwjdqU1Y35hzZhnrPFd8Da8JdjkCAlohNiYvawZ8yZrxrzDGreTK0a9aZMe40HrxRcrP7zbXpybRyRAAiSQRAIU6EnsNfpMAiQQSECF+THH6Idf/7qmRxwRmJknpxHA6ug/slZYpG2DNQrxacB4ggQaSADCfYU1Y7BI3dutcbV5RX/PPZp+9KPK67bbGtglLJoESIAEYiFAgR4LZlZCAiTQCAIqyJct07LPPVfTk09uRF2tWOZ11oy5ypoxT1ozBkK9FdvMNpFA0gn41oxZac2Yt1kz5gRrSW9dvf7/8Idawic/qYL9qafqLZHXkwAJkEDcBCjQ4ybO+kiABGomoIK8o0MLOPtsTT/5SU27umouuMUvfM6aMd+yVti2DFPXW7z5bB4JtAWBDmuFbeE+ZM2Y3a21BYIpjRwZ0YOvfEXTL31JBfv4+JRM/JEESIAEnCRAge5kt9ApEiCBqQSKp67/z//oZ9infGpO/iwEfmzNGLwzDoFOOiRAAu1HAAId77SvttZuHLDP+vvex6nw7db3bC8JJI8ABXry+owek0DLE1BBjlXXv/xlbfAHP6gpFn9reQwzNvBZa8acb82YP1gzJmttxsuZgQRIoA0JZKwZ8xJrxnzEmjF7Wmt1IFhM7sILtaWf+pQKdq4K3+o9z/aRQJIIUKAnqbfoKwm0OAEV5m9+szbzW9/SdK+9WrzZVTdvjTVjvmHNmPXWqr6cGUmABEigLAFs//YP1ow53FrZ7C3ywTPPaEM+9CEV6tde2yINYzNIgAQSTIACPcGdR9dJIOkEVJAvXqztOP98Td/xjqS3Kyr/sYjbRdaM2WotqtJZDgmQAAmUJ7DImjHvsdYui9BdeaUS+Yd/UMG+eXN5QvyEBEiABBpDgAK9MVxZKgmQQAUCKsxPPVWzfOMbmi5YUOGSlv4Iq6b/jzVj/s+aMcPWWrrpbBwJkEBCCHRbM+ZEa8a8z1qrbve2Y4d2C4T697+fkG6imyRAAi1AgAK9BTqRTSAB1wmoIJ87V/3E1PVTTnHd70b5l7NmzNesGfNza8bgfKPqZbkkQAIkEBWBtDVj/sqaMf9ozRicj6oeN8q5/HL1A1Ph+/vd8ItekAAJtCIBCvRW7FW2iQQcIaDC/BWvUHcuu0zTFSsccS82NxAhv8CaMddY42JusXUAKyIBEmg4ASw+9zfWjPmwtVaLsG/YoCBPO02nwN96a8PBsgISIIG2I0CB3nZdzgaTQOMIqCBPp7WGz35WU+xXnko1rmY3S/4va8ZcZc0Y7jvuZj/RKxIggegJYF/2t1kz5ixr0dfTnBLzea33S1/S9POfV8GeyzXHH9ZKAiTQSgQo0FupN9kWEmgSARXm++6r1eNdvaOOapI7Tav2YmvGXG7NmFFrTXOHFZMACZCAMwRmWTPmFGvGnGHNGffqdOSuu7SAU09Vob5uXZ0F8nISIIE2JkCB3sadz6aTQL0EVJifcYaWg1XYe3rqLTcp1//KmjHnWTNmyFpSvKefJEACJNA8ArOtGfNP1ox5vbXm+RNNzYODWs5HPqJC/eKLoymXpZAACbQTAQr0dupttpUE6iSggryzU4u54AJNzzyzzmITczn2Hf9Xa8Y8bS0x7tNREiABEnCWwDJrxnzRmjHYl91Zh6ty7Dvf0Wwf/rAK9rGxqi5jJhIggbYmQIHe1t3PxpNAdQRUmC9bprl//GNNX/KS6q5Obq4Ra8Z81poxd1ozRnkkt130nARIgARcJaBC1pijrBnzeWvGdFlz1euZ/Lr7bs2xerW276mnZrqCn5MACbQvAQr09u17tpwEZiSgQvS1r9WMP/yhpgsXznhhwjNgP/IfWOP2ZwnvTrpPAiSQYALYtu1d1gr7ryezSdu2qd8nn6xC/cYbk9kOek0CJNBIAhTojaTLskkgoQRUmH/yk+r+v/+7pq27Cvs91gqR8l3WEtp5dJsESIAEWpjAHGuFyPoR1pLWYKwC/+lPq1D/yleS1gL6SwIk0DgCFOiNY8uSSSAxBFSQ9/aqwxddpOnq1YlpQEhHsd3Z/2fNmDushSyE2UmABEiABJpO4GXWjPk3a8Zge7emOxbKgauv1uxnnKGCfWAg1OXMTAIk0FIEKNBbqjvZGBIIR0CFObZHu/ZavXrVqnClJCf3jdaM+bI1Y8asJcd/ekoCJEACJBBMoNOaMZ+yZsxrrQXndffs2rXq2wknqFB//HF3faVnJEACjSJAgd4osiyXBBwmoML86KPVxWuu0XTRIoddrsk1TFX/Z2vGPGStpqJ4EQmQAAmQQIIIvNCaMedaMwZT45PRBLyr/pa3qFD//e+T4Te9JAESiIIABXoUFFkGCSSEgArzt71N3b30Uk1nzUqI+1W7+SNrxlxojYu8VQ2OGUmABEigxQhgkbkPWjPm7daS0sjRUfX0b/9WhfpVVyXFc/pJAiRQOwEK9NrZ8UoSSAwBFeaf+IQ6jMVovJb5/R+2ZsxHrBnzmLXEdA8dJQESIAESiInA/taMOd+aMd3WYqq85momJ/XST35Shfp//EfNRfFCEiAB5wn4zntIB0mABEITUEGeSml64YVawLnnato6wvxWa8a8xRqFeegbhReQAAmQQJsRwANcfG/ge8RtDPjePvdcfK/je95tv+kdCZBALQRaJoJWS+N5DQm0GgH9wu7p0XZdcYWmf/VXrdbOz1kz5jfWWq11bA8JkAAJkEDcBF5jzRh8v8Rdf231/eIXet073qGR9cHB2srhVSRAAi4RoEB3qTfoCwnUSECFORZ5u/56Leaww2oszrnLnrRmzEetGdNnzTk36RAJkAAJkEDCCcy3ZszXrRmz0prrjbr3XvXwDW9Qob51q+se0z8SIIHyBCjQy7PhJyTgPAEV5nvuqY7++teaHnig845X6eAl1oz5njVjJqxVeTGzkQAJkAAJkECNBHxrxrzXmjGnW6uxsNguwzZtr3udCvVnn42talZEAiQQGQEK9MhQsiASiI+ACvO999YaIcz32Sc+DxpTEwQ4IuX3W2tMXSyVBEiABEiABKolcIi1QmQdAr7a6+PN98QTWt9rX6tCHcfxesHaSIAEaiNAgV4bN15FAk0hoML8gAO0cgjzvfZqijMRVvqcNWM+YM2YndYirIBFkQAJkAAJkEAEBOZZM+bb1ozZ3VoEBTekCETQIdQfeaQh1bBQEiCBSAlwFfdIcbIwEmgMARXmBx+spf/ud5omX5jfZM2YU6xRmDfm7mGpJEACJEACURHAA2R8b+F7LKryoy0Hr8D97nfF44hoa2FpJEAC0RJgBD1aniyNBCIloF+oL32pFvrLX2o6f36klTShsPOsGfN/1prgAKskARIgARIggQgJvNWaMR+zFmHBkRbV16fFvfGNOvX9rrsiLZ6FkQAJREKAAj0SjCyEBKIloML8la/UUn/2M017e6OtJb7Sxq0Z80Fr3K88PvKsiQRIgARIIE4C+1kz5r+sGdNhLU4PqqlrYEBz/fVfq1C/5ZZqrmIeEiCBeAhQoMfDmbWQQFUEiiPmeMc8ucJ8szVj/s6aMbusVYWCmUiABEiABEggsQR6rRV2IVlizbXmQKhj1XdG1F3rIfrTngT4Dnp79jtb7RiB4nfDMJU9ucL8j9aMOdUahbljtxvdIQESIAESaDCBAWuFNVYetNbgSkMXj3HGL39ZPA4JXRAvIAESiJAABXqEMFkUCYQloF+IWJX9hhv0+uS+Y36DNWM+bM0YTG0Py4X5SYAESIAESKAVCGStGfMRa8b8ypprLcO444YbisclrvlJf0igPQhwint79DNb6RgB/QLEPubJX5X9u9aMucSaMdo+x6DTHRIgARIgARJwhMDp1ow505ojTj3vxjPP6I+vehX3UX8eCn8ggdgIUKDHhpoVkQCEa2HbE2Wyzz5JZfM5a8b8xlpSW0G/SYAESIAESKA5BF5jzRh8nzbHi3K1rl+vn0CoY1/1cvl5ngRIIAoCFOhRUGQZJDADAY0oL1qk2RAxP/DAGS5z7uMJa8acZc2Ytdacc5MOkQAJkAAJkECiCBxorbD6u2/NlSasXaueQKhv3eqKZ/SDBFqRAAV6K/Yq2+QMARXmPT3qEIT5YYc542CVjkCYv9uaMRusVXkxs5EACZAACZAACVRFYLm1witjbgn1e+/VRkCoDw5W1ShmIgESCEWAi8SFwsXMJFAdARXmqZTmvuIKTZMnzLHI27usUZhX1/vMRQIkQAIkQAK1EXjKmjEnW3NtsVWMY664onicU1tbeRUJkEAwAQr0YC48SwIREDj/fC3kr/4qgsJiLWLEWmGA8Jy1WF1gZSRAAiRAAiTQtgQ2WSt8D+N72Q0gGNdccIEb/tALEmgtAhTordWfbE2TCegT5Y9/XN344Aeb7E7o6ndZM+ad1ozZZi10MbyABEiABEiABEIS8OxrlxMTnZ2Tk8bk8z09ExPGZLPz5+fzWGTVGLxylbdmTM6a5Bcr5AtZubPZ8T2M72V8T7vh8FlnFY973PCKXpBA0gnwHfSk9yD9d4KAfkG97W3qzJVXaqqDDSccnMGJHdaM+VtrxgxYm+EifkwCJEACJEACdRIYHHzxi0dHjXnuuXe/e+fO8oV1dd18s744duGFY2PThXjGmjE91ozpsmZMylr5cpP2Cdp3mTVjFlhrdivkkYrYO96h27JddZUe838SIIFaCDCCXgs1XkMCfyGgwvzoo/Xw0ks1TY4w327NmFOsUZjzxiYBEiABEoiXwPj44sUS+Z7JRkaOPVbyjY2ddZb/59GrRNdFFur3cOFdbTxgHrZWiKzPVH5SPh+0Vvjexvd4c/3HuOfSS4vHRc31irWTQFIJUKAntefod1MJ6BfQvvuqE9dco+msWU11KkTlmCKHiDkGMiGKYFYSIAESIAESqJvA+PiiRblc9cVMTLz61SLQc7l/+Id0WgS6HBUsa80YCFl8v2EqfCFnsn9Cu/A9ju/15rYK46BrrikeJzXXK9ZOAkkjUPRHLWnO018SiJuAfuH09mq9116rKfY3j9ub8PVhkRl8oWMAE74kXkECJEACJEAC9RPIZhcvDiPQUePExDHHqFD/2MdUqMv/BSsV6vj+azWhju/x06wZg3YWSDTjJ4yLrr22eNzUDF9YJwkkjwAFevL6jB43ncBFF6kLq1Y13ZUqHcCABF/gfdaqvJjZSIAESIAESKBBBCSCXs0U93LVT0y89KUi1PP5k07C5qZT80KoQ7jiWIXj1JzJ/nmnNWPwPY/v/ea2CuMkjJua6w1rJ4GkEKBAT0pP0c+mEtAv8n/+Z3Vi9eqmOhOicqx2i4j5VmshCmBWEiABEiCBhhCAQMTf6XIp8jXEiSYWilXaJya6uuR98nrN83btwlJl9ZaV5OvxPQ+hjvuquW1avbp4HNVcb1g7CbhOgALd9R6if00loF8or32tOnHOOU11pobK32PNmGet1VAALyEBEiABEqiJwODgwQfL6uR9fa961dCQLMJ5+OEjI8YMDx9wgKxCPjy8xx6SDg52dcnng4Ojo5Li3WJEfJGOWitsK5Z04R723fOZOsHznnmmkkD3rRmDdKbykv75RmvGYBzgRnvOOad4XOWGV/SCBFwjwG3WXOsR+uMEAf0CWbZMnVmzRtOFC51wrgonPmTNmD9aq+ICZiEBEiABEoiUALYNwzZiMxXueZs2SZ5Zs847T4RmKvXMM1OvgbDstCb5xIzpsOaO8Cx9cIBj2d9cIuUjI3vvnc3KA4ujjpIHGENDhxwiDyrqtY6O979/fNwYzwverA3bk/VaMwbbstVbb1Kuf5E1Yy601myvt21TDw4/XLdle/rpZnvE+knAJQIU6C71Bn1pOgEdSHR2qiO33KLpS17SdMeqdOCL1oy5wVqVFzEbCZAACZBA5ASeffZ97+vrK0TMq69AZKsx6fT3vieLp/n+zTeLsPU8jQ9jX+9yQh2fQ9CrAKq+9tKcENj5fDot74pns7NnS5rL9fRIms/39op/mLKey+F4zhw5Pz6+fLlep6m0SOuQs2JBb47rJ9X9Pzgo+To73/teEeilhvZDmEOop62V5m794+OtGfOv1prd3j/8QT145Su1n6J4VNPsNrF+EqifQNGKl/UXxxJIoBUIXHCBtiI5wvwSaxTmrXD3sQ0kQAKtQWBioqOj0pTr8q3UrapyuQ99SNclP/lkjajfeKMI3snJG28UaTs5uXOnSHksBoaIMCLqOIYQhWBHms3OnSsPAEZGli0TYTs6umyZRLbHxpYvl/O53Pz5EOBS/+RkZ2e49khpIr/XrpW0s/PyyyXt6HjwQZHoY2MnnCDljY+/8pXhypVSCuZ5zz5b6Xq0FykEe6GE9voJD/BXWDPmdGvNYoBxFsZd73tfszxhvSTgEgEKdJd6g740jYBGCM44Qx0488ymORKy4pusGfNdayEvZnYSIAESIIGGEZicrFWgl7q0YIH35/mO+fzb3y6x5nx+9WpJff+ee0Sw53K//rUI6mz2gQckHRtLpzWSvGKFxqb3319XOd9nHyk5m125UiPeGuEurS3ssUzNF4Hs+/fdJ2k6ff/9UkY6vXat+J1K5XJSPx4UIB0bW7IEEW/E0sPWLfnl3XNpTzmDMEfa7gIdnDBuWGbNmOOs4dO40zPP1HHYbbdp/1x8cdwesD4ScIkABbpLvUFfYiegXwj77qsVn39+7A7UWOEj1oz5vDWJbIjVWBgvIwESIAESiJyAvHPdmL/LOkV8YuIlL5GfkGazssScWHe3pp4H4YpUz4f9X2W07//pT1JOKgUh/sADIsDT6a1bxQ+ZWi8RfwjwdLqjQ4+7uyUtnXq/Y8eiRRDoYT2amt/3uTjcVB7V/oxxA8YRe1gz5gBr1ZYSdb7zz1e/brlFhfrjj0ddA8sjgSQQoEBPQi/Rx8gJ6BeATh405vvf1wp6eiKvKOICd1gz5sPWJJIiFnElLI4ESIAESKBuAtFF0Kt1ZfbsanMG5StEwtesESHu+/feq4L84YclfyaDfzJ5fqoQ7+2dKswRqS5NEbmenNQHDLnc3LlRfH9VO8UdDwjgRxCDdjyHbdgwrrjCmjELrMVNBOOw739fx2mveIX2l8wNoZFA+xD48zNPGgm0K4HPflZbftRRrhPAO4bYLmXMmute0z8SIAESaD8CEKBYtdxdAhpXT6V++EMRypnMRz8qb42n0xdfLMfp9IMPSoR81qxUSt6Kx+JqSGdbM6bLmrxjLlZYHb2cIM7l5s1TYa5CvV4+M22vBj/wwIACPZg4xhVnWCusbRCcu9FnMS7DOK3R9bF8EnCLAAW6W/1BbxpMAE9ktZqzz25wdZEVjyfbfdYiK5YFkQAJkAAJhCSg3yMiYDIZEZoDA/vtJ/ubb9q0erVs8LV+/Wc/u3mzTD1v1BT3kA5Py759u0y9z2Q+9zkV5FdfLe3AKvGYot5trSDMS4U48kH4TqumzIlcbsECFehlMlR9Wle7NwZbdhVfCCEO/3BcnItHpQR2WivM1Cv9PN7js88uHrfFWztrI4FmEeAU92aRZ72xEtA/8HPnaqWXXaapLp8TqyMhK/sva8Y8ZC3kxcxOAiRAAiRQNYF8vqNDYsrj40uW6GJrS5boquaLF8vx+PjSpZJms0uXisDM5+fP1xi0xJndN89bt06F+TnnSLs8T7cng+cQsIiEI1KO1eDxOfLXmmazujp8rdfjOkTOy9GHvxToIBYuxbgD45CzrIUro/7cGKdddpmO4w45RPu1v7/+slkCCbhLgALd3b6hZ5ET+Na3tMgVKyIvOuIC77JmzA+sRVw4iyMBEiCBNiBQiHR3d4uglm3FJPX9gQERdX19b3iDLKs2MrJqlQjWguBuTTiet22bCPRSYY7WQtAiMo4U55Gv3jSbjSaCPtO755zaXm9P6fUYhxxmzZijrEVTdvWlYNyGcdypp1Z/LXOSQPIIUKAnr8/ocQgCOkA75RS9BGmIAmLOikXgzrbG1dljxs/qSIAEHCYAwZ3NdnUhwh0U2S6NdE9M9PY2ZjV1h2EFuDY5uXBhuWjz1OzgHLUwRx3RCXSu3g6mjUxxP/yLNWN+ZK1Zi8idcor687Of6f15+eWNbDvLJoFmEaBAbxZ51ttQAvoHfPFirSQ526e935pEesQaioiFkwAJkIATBCDYhof3339szJihIU3Hxlas0KnYw8MiLPN53bebgru2bhOBXulKCDGs6o3jqIU6+ruSL9V8xv3Pq6EUXR6MSzBOucpadOWHKwnbsf3613p/btkS7nrmJgG3CVCgu90/9K4uAt/4hl6+YEFdxcRwMSLmW6zFUCGrIAESIIGYCOTz3d3yrvbw8H77yb7XEOKSynEut3Bh5UXD5s+PydUqq8Gb59u3ywW+/9xzOnVcj3O5446rJlJdZWURZps7V/yanNQtRj1P5h8UDIIcAr3wSbQ/5XLRvIPO/c+j7ZdqS8M45VPWjPmytWqvjiofxnUY5518clQlsxwScIEABboLvUAfIiOgA4wTTtAC3/nOyApuUEE/tmbMbdYaVAmLJQESIIEGEpiYSKdFoI6OrlypAvwFL4AQl3RsbK+9dEaQm7IVaPBOczp93nkqXSFgFy8Wz9Ppvj7ZGKy7u79fth3r7u7o6O4uvIok26sJh2efPe64XbtQqksp+EPcBEcdS4U6FlmrtyWTk6mU8Kl//3O5q8SC/dfP5MGJWCGNeiYA6mnX9HZrxmAcs9pa3DTe+U69Xy+7TPv3uuvi9oD1kUAjCFCgN4Iqy4ydgP6B7u3Vii+8MHYHQla42ZoxF1gLeTGzkwAJkEAMBCTSqoJK961Op7dulTWVRZBLDHnz5pNPFiE6PHzQQSKZJiczGcmfNPP9226T9mQy//3fEsn3PN2+C4Iund62TWLO2HYM+39DAJa21/dHRwcGhNOsWS7ywLvonrdlS5B/pQIdx+BR2t5qjyVyjrkH1V4TlM/zNm4Uv7EtXGke9AsWiavX79LyeVxMAOOYV1gzZom14jyNP7rwQr1Pb75Z+1t+A2kkkFwCFOjJ7Tt6Po3Al76kp/baa9pHjp3AvuZ5a445R3dIgATahIBGVMfGdt9dYsWFqecveIG8Cz4yss8+EvmG8E6nN2+WiKTEyuX/XG7FChVccuSSQQb296sA3bpVvPP9p5+WY99//HFJ0+nHH9fI+LPPSrtE0GUyItR7ezWVDcbkWFOsag4BWK7Fvj88LOWJQK88db9cCY09Pzk5bx5i6cqnuD4IcqTFn9Z+FOW750F+wzP0D1IKdJBpTIpxDMY1WESuMbWVKxXjPowDP/zhcjl5ngSSQIACPQm9RB/LEtABxMtfrhk+9KGyGR354P+3JpEnMUecohskQAItTQBTivHO9/CwCnAc5/O9vdUI7VxuyZJq8kUPU2v1/TVr5Cff/81vJM3lPv5xfZtapzzPmvXNb4pw6+l55BGZgj4xkc1KvhFrxnRYk8/FCse+v3ixCOpyQq7c+XLtTKVUoOdy0WwnVq6eWs973tatlQQu2guBW2s9pddFvf95afk4ht9IcZ5pYwlgXPNVa8Z83Fpj65xe+oc+pOPCyy/X+/j226fn4RkScJ8ABbr7fUQPAwjoH+CODv3oO9/RFDGBgAuafOp+a8b81FqTnWH1JEACLUVgYqKzUwSXRLxFqhYEuL4LPj6+ZAnepk5Gw3fskPakUirEU6lf/1qnnu/Yof4vXSqCOpeT/8VEjsu77h/5iJyZM+dHP+rslOtvvlnaDYE+aq0gxCFEO60VzktZ9Zmr30Uqyz1PZxKUayOELVJwKpe/2vPywCKK+xBrBZSrF34jjcr/cvXxfDGBa60Z8wZrxrzYWnGexh3hd+8739Fx4qGHav9j3YLG1cySSSBKAhToUdJkWTET+NSntMJVq2KuuOrqctaMwWqn+oVR9eXMSAIkQALPE8Bq6P39L3/58LAKcRl2jozodmQiSStFRp8vyJkf1Fvfv/9+jYzfcIOm99wjqefJ/zr1XN597+rq6enqkuMDDpDHs7JE2OBgoTGTkx0dUuKWLaeeKu/Gz5q1xx5ynTF4iKvlQbDj73OvNSlfrFBfoeRwP1U7IyFcqfXnRuQc79iXlgghi3e3IXBL89V6HNcU90b5X2u72+06jHM+Yc2Y66zJKyVicdHAuBDjxC98Ia6aWQ8JREEgtl+VKJxlGSSgf/iXLVMS+MPrLhd8QQ1Zc9dPekYCJNA8AnjHe2DgsMPk7e7x8YULJdKI7agwNXh8fPFiOT8x0d2dLCEOtv398lMq9dvfSkRcIuMqxHWxMghCeeNbIuBYlK1UOPf377nnyAjKLJ+Ojh53nEbely0ToZ7J/Od/an3btslV2Ne535rwFjMGi8DZV8///A569abRu1xu9mx9FFD9lXHknClyXirQo/apfoGu8XfP023tyvmH+wgp2lUuP883hsCwNWMwDjrPWmPqKl/qpz6l48aLLtL74Omny+flJyTgDgEKdHf6gp5UTeDcczWrxDrctOutGXOPNTd9pFckQALxEsBibJ6nS4dhSvr27ccfL5HgfH7uXBeF3UyUPO/hh8XvVEpXQ8/lTj1VImW+v369PEjIZH7zGylj9uwHHpDI9+RkNiufY3GpTKanRxZjgxDHu+LlBNbAwCGH6DJ1M3mmn09O7refSOfx8S9+Uerp6Pj4x2XxO88bGpIc8GPQWqFMvKtebeQvn+/q0v5zcyaD523eXOnBDngjLZCI5qd6Bbrnbdok/mNmRalX8BsphXkpoeYcYxyEcRGmvsfjDcaJGDe+613x1MtaSKA+AhTo9fHj1TER0Cegxxyj1Z18ckzVhq5m3JoxWCQldAG8gARIILEEMLUzm503T2J9AwNHHCFCcmDgyCMlzWYXL1ZpntQmbtsmAkne7VZBrqnv65KXEEazZ69Zo1PS83l5OxzveKdSPT065VzbD164DoIKaSml8fFFi4Tr6Ojee9f2Ruluu4lQz+Xe/355QJDJYL9zrWnCWuGddUyVRkQdfpb6heN8vqfH7Qcsuhs9/C2XluNfLv9M5zFDpF4+nvfkk9U8YEC/Rd2OmdrJzysTwLjoOGuFRRorXxXVpyefrH9vLrhA74vbbouqZJZDAo0gQIHeCKosMzIC+gcVi358/euRFdyggj5tTRYrEmtQJSyWBEigKQS2bXvTm2R33bGx5ctF6qRS/f0iONPpXbtkcbLh4b32kt/7sbH998dk3KY4WnelKn99/667VIjfdJOmf/qTCCRpq/yTyLJExDs7e3tlSvosa4V3TSFoIZSQ1urerl1HHlnN1PaZyp+YOPpo8T+fX7NGUjxwwHWY+o531RFBR/vKtcPVd8/RLnlEVPi5/E/l2lf+isqf4BUNiX1Xzln5U9ker9IDEAhzpJVL46dxE8C4COOk/7AWtxdf+5qOK1/6Ur3PKz3yids31kcCBQIU6AUW/MlZAmecoa4dcYSrLmIK153WXPWSfpEACVRDAJHdbHbuXIl479z56lfLZOj+/le9KgqBWI0PceTxPF0t3fMeeUQj4w8+KPVmMnfeqUJ8dFQFbColQjyT6e7WKeIyCb0QAYMQRxq1wNPHAYWZCFGxyeXe+16div/ww/JIwvNk2bmCQVBA8EGol3s3PZdLdgQ9+n5TlgWBXmBby0+ep/vXl7sW9x/SRrWnXP08Xx0BjJMwbjrCWnXX1p/ryCO1jHe/W9OLL66/TJZAAtEToECPnilLjICADpB7e7Woc86JoMiGFvEZaw2tgoWTAAnUSWB8fP58nSK9114SSxwb23NPSbH4Wja7aJEI8lxu4UKJ1GFqbp3VNuFyjQphUTDfX7tW2lMQ4o8+Kk51dPT1iUAV4SnCuyBAOzr0uLtbBaxIHpHJmkL44LjRDRwa0n3bsZ97dPXp+6nZ7Ec+Iu3NZD7zGbkfPE/54UENtmcDH6z6Xtr+JETQtWWVCaJ/K+eq/lMsdlj9FaU5NW7ueU88Ucl/PEhBGnU7Sr3icX0EMG76mbX6ygp/9Ze+pL/fV12l98nU/SDCl8YrSCBqAhToURNleRES+Jd/0cKWLo2w0EiL+pI1ieyIRVo0CyMBEqiSACLdo6N77imR0NHRZctUgEOIL18uwnxiYvbsSgP8KqtzOFt/v7Svo+PTn1ahqRFhCBUIF7wTPnv2vHmzZ8sUb7HpAhzXIW1Ww3fteslLGjlzYXLygANk8nU+v3q1vrJw1VVT1wrAInKlU96xyjz41PuOdaP5el5tb+7X61e9EXTPe+YZua89L/jFMTwowX2M/qjXb17fWAIYN2Ecdba1xtZZKB3jSowzkRZy8CcSaCYBCvRm0mfd0wjoE80VK/SDf/qnaRkcOfG4NWN+ac0Rp+gGCbQYgcnJdFoG5sPD++2nwnv5ck0hvJctE+HtfuSyUR2jU9SxXVk6feONEmv0/f5+nZqeyYjgxJRsCHOkOO+qoMG+70NDL3pRsDSLlisEuu/fcYdyVGGIWvBuOiLqWHUe/HK53t6pwh7XuZPK7vDlDe2A4C2fM9wnEkHXGHi465C72qntFOgglqwU46h3WDNmX2txteFjH9Nx57e/rff/hg1x1cx6SKASAQr0SnT4WZMI/Ou/asWy7JCb9ilrMgVWzE0f6RUJJIVAPt/ZKQP4oaFVq0SIDQ4edJCsej48vGqVCPLJyc5O/p6J8P7jH4VDKvWrX4kQTKXuvlv6WKPfOkVd/mpmMrNnT31XHEIcAgap6/fHwMDhh8t9gAc1jfcXS/vpg4+Z6oOgRT73I+iV24X2QKDjGO2rNa03gh52cbio/K61vbwuHAGMozCu+pG1cGXUnhvjTIw7zzyz9rJ4JQlER4ACPTqWLKkOAvoHer/9tAgs3lFHgQ269P+sGbPZWoMqYbEkkFAC2KZKxLb8k0Wz9J1uXTwLke5sdrfd5PzIyItfrBFxrHoubzy3o4kMlSm8g4P6IGJ4WI7T6YcflrSj48YbZQp2Or1pk4hxESD6bnhnp0TKIcCR4l1pCHEILikrSdboqe2lLHz/9tvlvvU85V/6OXhin/ZSIYj7u/Q6V449r6+v0oMutCfq+6Xed9DDRtBd4U0/whHAuArjrBOthSuj9tzvfreOQ7/8Zf09WLeu9rJ4JQnUT6BNB0P1g2MJjSDwmc9oqe4N0iE8vmWtEW1nmSTgLgEI6oGBQw+Vd4FlUTUV3jqlF1N7EUGcmOjpUSFQ37ZK7hIJ6xlorF8vP6VS994rQjCdvu8+Fd5PPilpKuX7+g60SGyNiE9NfX/OHBHkEFJIIRwhrHA+rJeu5B8b22MPXUNAF/GLyy95VUDu63KGByB4RaA0n7uruEOW9/WV+jz1GPcN0qmf1fLz5KTczfKgTndDCF8GZjRs2IAWBJXRavd/UBvb6RzGWX9jrbA2RmMZYNyJcejppze2PpZOApUJUKBX5sNPG0xAn1geeKBWc+qpDa6u5uK/Yo37m9cMkBcmkgAimJs3v/Od/f2JbELMTmvk1ffvv18EeCp1330iLDKZBx5QAT4woO+GY9sykXwixHt6ioW4SG25XqwwQI1KOMUMJXR1uO9CX1jjBZ6nAtD3H3ssSAjiwQci55ihUFodHlCVnm/+sS5h6nkqeEv9wX2FduK4NF/Y44Iwr+1BHfqlnN/wt/T3JKyfzO8WAWxviHFXvIvHnXqqjkvPOUd/D9audYsOvWkXAhTo7dLTTrfz859X92RI6pZtt2bM9dbc8o3ekECjCCBivmXLW99aeVmpRnngerlYnO2221SIr1kjwi6dfuwxjYjrFHQIOaSZzJw5IshLBQWOIYyQuk4hav8k4ioc8e551OWXK6/ayDkEOoQhypuYmDVL/J6c7OgIEvjI16wU+92Xqx/3W2m7yuWv9ny9U9tnevcc/uL3p1q/mC8ZBDDuer81Y3az1mjfMQ793Oe0ppNPbnSNLJ8Eggg4J4iCnOS51iOgTyhf/GJt2dvf7moLP21N3qcVc9VL+kUC0RCYnNTByaZNp5yycycXZ5MN24Ss7990k/z+ZzJf/KLEILu7P/xhOe7uvuIKiXDPnv3EE7NmGdPT09XV02MM9slGOtuaMVj1G1OkMWUaQgNCKZreTF4pWK09n589O56/t7o2vO/fcktQfegP9BPSUrLj40uWBMemS3M257hZ757XuzjcTO+eQ5jjARj6qzmUWWvUBDDuwjgs6vIrl/eOdxSPUyvn5qckEDUBRtCjJsryQhD4whc0c23T30JUFDrrfdaMecha6Mt5AQkkksCOHa973eCgyNIVK+Qd4PYxlWeFqekq2NLpe+4RBqlULod3w2XN33S6q0umpCOiCoEAwYCUgiHcHRT31PaZFoVDv6Kf0a+lrRob2313t39fqnv3POoHRWNj9a0hMJNAh7/l+qW0n3icTAIYh2Fcdqi1RrcF41LM8DzppEbXyPJJYCoBCvSpNPhzwwnoE8nDD9eK3vrWhldYYwVfsFbjxbyMBBJKYM6cNWu6umQRuKVLJSI4OHjwwRpDTmiDyrjteVisDUL89ttlanIqVXhHXKaiI2KaycyaNfUYggAphEKZ6nh6BgK53Jw58ohkaOiAA+LY7xzuhJ3aXu6Biyxq53YEvfL2agUeckfjqP50ZGTlytoeXOhd4HlPP13plYHS379y/VN/S1iCCwQwLrvaWlwenXgixq16f61ZE1fNrKe9CVCgt3f/N6n1Z5/dpIpnrPYX1ozZZm3G7MxAAi1FIJPZtk0G6PPm3Xprd3eSBTq2LVu/XoSf7z/8sAz0M5nf/146LJPR7cpkgN/RUXgnPJPp7dVF2yR2WlhFHUIAAgBpS3V+Exuza9eRR8ruANJTcbiBxcfKLQqH/sYDGhyX800i6EkW6Lifo3rQNDmZycjvW60PLjzviSfkes8LlufwE/0C/8v1D8+3BgGMyzBOe5O1uNqGcau7r2TGRYL1xEOAAj0ezm1fiz6B3H9/BeHuVCFs79H2HUYAbU3AdcFR2jm+f/fdIsRTqSuvlG2yfB+rcnueSD4ILbz73dk5d65MVS8d4GPgj5QD/1LSjTmOe2r7TJHz0qntuB/KtT6bXbjQZYFuTLz7n4+O7rWXRs510b9y3Mqd9/116/Slk+Ac6A/0E39Pgzm16lmM0+IV6CedhHGs3m+PPdaqfNkuNwjE8rTajabSi+YT+MQn1Id4oiRh2nuNNWP6rYW5knlJoPUI9Pbee68seuZ52SzexHOplZj6msn827+JEMhkzj1XBFIqtWGD+JnJpNMSCe+2Zswca4XF22ZZK7xDDgFfKthdanMr+iJToMfHjclmFy2KR+BWtygc3jmfWQDqd5m726vpXSOruFe6fyBwIXwr5a3ms1oj5yjb89atC46daw74id9XXMe0PQhgnIZxWzytxrgV49h4amUt7UuAAr19+z6WlusTx91318pOPz2WSmuo5L+t1XAhLyGBFiSQSg0Py3Bkzpx77pF30pttnvfcczJgT6e/+10Rcp2d//zPkmYyf/qT+AmBXSrIIcwhyDGghyBpdrvavf5du176Up3aHg+JaheFw/2E+6Wcd7lcT49Gel18jFXwOu5V3LGGRcGDcD/5/qOPVoqgo19mfoASrl7mThaB5ozbTj+9eFybLGb0NjkEKNCT01cJ9vTv/16dl0mlbtmV1mTfXTG3fKM3JNBsAgsW3HDD7NkSSR8bi0eC7NwpQjyV+vnPZap6JnP22RIh7+z8x39UYX7jjSLIZ83q6JAIP7Yxm2/NmLnWCtuZcQDf7DsouP6JCd0vfHDwkEPiWYRQ47Gp1PXXy31VzhA5RzrTg5x8fs6cSuWVqye+8/Cuvz+oTrQPKSLTQXnDnKt9VXv9/fe8bduC6oOfEOhR+RtUF8+5TwDjNozj4vEY41iMa+OplbW0HwEK9Pbr81harE8YZQgt9oEPaOre/xdZc88vekQCLhBIp/v7ZdG43Xa7/nrZ3zt6U3mWyZxzjgjxjo4PfEDSdPrii0VapFLr10udiIBDiCPtsSYCXqywqBsH7tH3VJQlYneAiYnOzkpTmaOq0/d/8xu5n3xfV+8vLRcR89L7CIKwND+Osfo8jt1LIXgrU47u90Uf49UaQZfIeSVP4ScfvLl3pzXTo+aM4z7wgeJxbjMJsO5WJECB3oq96kybTjtNXVm40BmX/uLIZdZkWx8x17yjPyTgFoH582+9VSLpnZ3PPivvdkdl6fT3vieRcd+/7z4ZmJeu2gzBBCEOoY4BOgbsMwmpqPxlOdEQ6O8/+ujh4WjKqlyKCtR0+rLLEEuemh/3D+4r3G84PzVv0M8i0IPKDcrbjHOeV3leGH5vqm3vTG3IZufNEx4TE7NmVRLa5crxvMceq3Qd/MTvf7lyeL69CGAch3FdPK3HuBbj3HhqZS3tQ4ACvX36ugkt/ehHm1BpVVXG+4e8KpeYiQQcJqBvhC5efPXVc+aIm5WG0TM3w/fvuENKTKVuuinoXVMMwLusFSLkEBQz18AcLhIYGdl7b1kUbnR0xQqZKdFow0wMzwt+DAtBjvsM9121frkfQZdNBGc2jQTOnG+mHOPj9W03J9veBf09QL0Q6JjxwL8HIMNUCDRnXOfuOJd3RbIJUKAnu/+c816/6I87Th076CDXHMSqn8PWXPOO/pCA2wRmzdqwQSLoc+fecYfskx7eduwQaZ9O//d/S+S81DDghmBCioF5aX4eJ4tAX99xxwVL5Wjb4ftr1ugDoNtvDxJ8EOKInNcq+PL53t6g8qNtTe2lTU5WFugQ5khrr0mvHBtbujTo93rmcpWi5z3+eKVHf/g7gP6buVzmaCcCGNdhnBdP2w86SH9/Xv3qeOpjLe1CgAK9XXo61naedVas1YWo7GJrIS5gVhIggWkEFi78+c97eyUCPjiIzWemZQo4kU7/8pcyFPe8wcGAj59fjR2RTSwGFZSX55JDYHx88WIRbkNDq1bpRmeN8l3XNEinv/OdSkIRwhxprfeZ61PcZe5JPIs7an9KBL2WmRGe99RTIsxlMcqgO6NUmONBXlBeniOB/7UWN4cPfjDuGllfaxOgu2eHTgAAQABJREFUQG/t/o2tdfoEcckSrfDEE2OruMqK7rFmzHZrVV7EbCRAAoEEfH9kRAb+ixb99Kci1Ku37u5qBENUEb3q/WLORhLo63v1qzVyXk3v1+5JKnXllSLMy60Cjgc/9QpzeOj6FPe4t1eT1dsrPRgBt9J0pm3VINAx06H0eh6TwFQC26wZg3Hf1M8a9/OJJxaPgxtXE0tuDwIU6O3RzzG18u/+TiuKchmpaFw/31o0ZbEUEiABJdDbu2aN7JPe21vdfumTk4ceKqvCe146HRR5z1kzBumENdJOKgEI2IGBww9v5HZqnqers6dSP/tZ0JRzCDwIcwh1nK+Vr2yzFlRfreVFd53GsdPp888PEsyIQGM7OWxXWGv9k5OplETAx8cXLapl0TwuDlcreV5XiUC84z6MezEOruQZPyOBmQlQoM/MiDkqENAnhoiKvP/9FbI25aNnrRmz3lpTXGClJNDyBJYu/cEP5s41ZunSSy+dN0+mvg8NBQnwfH7lShnI+/5pp8kmjKXvkkKQj1iTxcTEZEk6sZbH2HIN3LnzFa+QyPnkZDrdmP5TeZxOf/vbGjkPrgXCPLo1DfQ7L5fr7a1FkDa6o9Pp739fePj+hg1BRPB7h90RcFyrX/IKg3JQoR62nJkEOh4oMIIelmx758e4D+PAeGi87336fYVxcTy1spbWI0CB3np92oQWveY1WumKFU2ovGKVX7VWMQs/JAESiIhAb+/994vwXrHiP/5DNqHp6XngATkuteHhN71JBMSsWS95ieyvXiqcstaMwaI/49ZKS+GxqwSwv7lspzYy0jgvJWIuwtD3n3giSIhC0OH+ghCF4KvVs3y+p0cfDQQ9hqq11Pqv87xNm4RDKvXznwdF9jFjAJFzcKm35lr3PTdG16LwvI0bg/oP/YQ1ApDW6y+vby8C8Y4DV65UuhgXtxdrtjY6AhTo0bFs45Le8x7XGo+B/b3WXPOO/pBAaxPA4nG7737JJRJRnx5Z1+hCf/973ysR8p6e3XeXd9lLI3oQ5oioI8Le2vSS37r+/pe9TPY5n5jo6goSivW20PO2bFEhesUVQRFsCFFEzqOa0g6/XY2cQ6DDz9K0VPDiuDRf2GN597yWxeF8f906uT/KxRrRj3jQEtYv5icBIYBxIMaF8VBxb1wcT7tZS1QEKNCjItlm5egUHpnUKnbSSZq68/+3rMkAUcwdv+gJCbQjgXKR9XR6x450WiJ+8+dLCoE+x9r0yLr+3WlHgslos7yLLJ7u3PnKV4pAb5SlUpdcIsLc82RX9ekGQYcIcdSR12x2t92CHgxM9yTuM1u3BkWi4QUEedQ8at3/3PMefbQafzHzAe1gSgJhCGAciHFhmGtrz3vSScXj5NpL4pXtSYACvT37PaJWn3yyFiTLRLllN1pzyyd6QwLtTqA0sr5s2Te/uWCBMR0dW7eKQMdAHMIKQn22NZnKLNbuFN1t/8DAoYfKlPZcbt68xghYXfLM9++7r9KDV9xHEOoQpvWSgzDfsuVtb9u1q97Sor/e87ZurVQqOEQt0Gtfvf2xxyr1I37f0Y+V2sbPSGAmAvGOCzEufuc7Z/KLn5NAEAEOdYKo8FyVBE47rcqMsWW7w5rstysWW7WsiARIIEICGJhDaEFQQGBEWBWLipBAYTu1CAudUpTv3367TokujpzjvsC71VFPaYcLo6N77SVTufP52bMrCUvkjzuV7eWqiUjj96te/+QVBqkv/AMZ9bLc4nDoT/iJvwP1+svr25sAxoUYJ8ZDw71xcjztZi31EqBAr5dgm12vU3aWL9dmH3OMa83/njXXvKI/JEACJNC6BIaGDjhgbEy22aptH+yZyKRS11wjEfl0+pvf1Bh68RWIsOIVCczAgNArzl370cSEm8IcLZIIejUCHQ+8cF2t6djY0qW1vHuOReE8L/hFCPQbhDmEeq1+8joSmEog3nHiK15RPG6e6gl/JoHyBCjQy7PhJ2UJvOtd+lG5pV3KXtiwD7CI1CPWGlYNCyYBEiABEigh0Nd33HGNmLHk+3/4g0SqZdswfee8WH5CaEKQI8X5EjfrPsznu7tdjJyjYXEL9FofyJSLnBfaIRLdGDx4wXmmJBAFAYwTMW6MoszyZWCcjFdCy+fkJyQwlQAF+lQa/LlKAqecUmXG2LJ91xr3S44NOCsiARJoewKY6j0ysu++xZPOo0Hj+zfdVEkQQ4hjtXYcR1P79FLQ3umfNPsM5hX09QV5goh0aRqUN8w5iaCj5jDX+f6jj1bqV0TMEUEPUzbzksBMBLDYKMaNM+WP5vNTT42mHJbSLgQo0Nulp+tsp/5BO/BALebgg+ssLvLLf2kt8mJZIAmQAAmQQBkCIyP77KPCHFGiMhlDn9Yl2Hx/zZogIQcBhwgr0tDVhLxAIujFMfyQBTQou+ft2CF+eV5l78ANQr1ed2pdHG6mCDr8jKtf6+XA65NJIN5x48EHF4+jk8mMXsdHgAI9PtYtUNPq1a414n5rxuyy5pp39IcESIAEWpfA0NCqVfLuedSWSt12m05pD14LHgKuUYvBlWuPuxF03Re+nN8Q5FHPMBgfDxtB17vF8556KuhRQqmfUftbjg/PtycBjBsxjoyHgnvj6HjazVrCEqBAD0usrfO794flImtt3SlsPAmQAAnESiCbnT9fpPPAwOGHj45GX7Xv33xzUOQcAg5TnyHQo/cguERXBbqs3h7ssZ4Ft6gEL1Ztl1Xcg/qpnC+e9/TTlSL9pX7iuFx5PE8CURCIdxzp3jg6CoYsI3oCFOjRM22pEnVKzj77aKMOO8y1xj1ozTWv6A8JkAAJtC6BHTuOP35wUNb8SKeDIqG1ttzznnhCyvP99euDyoXAhDCHUK+1vrDXTUy4uUjcTIvDYcYB0rDtLs1f+9T2J5+sJOjhX9z9Wto+HrcXgXjHkYcdpuPqvfduL8psbVgCFOhhibVl/pNOcq3Zt1ozJmvNNe/oDwmQAAm0HoFsduFCiZzv2nXkkSMjUbZv+3YR5JnMV78atG0XhDkWg8Nq7XFHWN2NoGtkulyPgFNUwjf81Hb1zPeffDLowQv8jtpPlMuUBCoRwDgS48pKeaP7zL1xdXRtY0lREKBAj4Jiy5fx5je71sQrrLnmFf0hARIggdYlsH37618vkXOJcUfTyl27VJh/8YuyGrhEgqeWi4gqhPlsa/FvvzU5qe2dmJg1q5LAnOp7PD9rPNr3//jHSpFpPOCISqDXHkHfsKESP/R3VH7G0wespVUIxDuudG9c3Sr92CrtiOhLtlVwsB0goFNw5s/X45e/HOddSR+y5oo39IMESIAEWpGArs4+NPTCF8ryXgMDhx0WZeQ8kznnHBHmvr9xY5Bwg1CDMO+wJkJeLD7eExOzZ1cSwPF5UlyT52lE2vP0sUnxp8JVTPaRFzMGQr00X9hjEehBMx3Kl6O963nBAh39CX+j8rO8P/yEBKYTiHdcecwxxePs6f7wTHsToEBv7/6fofVvfKNmkK92N+wma5za7kZv0AsSIIFWJoCp7Bs3vve9usN2tLIY24OVMoRgg7BsljCHX7K9mosC3fcfeKCSXxC84If21JpOTqZScm02u2hR8Pr6wSV73ubNItE9L3hJQfQ3hDn8Di6NZ0mgMQQw1R3jzMbUglIxrn7DG3CGKQlMJUCBPpUGfy4hcMIJJSeafvgja013gw6QAAmQQMsSkNW5RVBt2/bXfz0wEH0zU6lLLtEp7Tt3Ti0dQg2CsttaIRI8NW+cPydVoEPwRrWfuAhz6bewiwOWi5yjD9Hv8BfnmZJAMwjEO87kVPdm9HES6qRAT0IvxeijTrnB+4XuPdl72FqMQFgVCZAACbQZgW3b3vhGEeb5fE9PpQhtWCyp1JVXSuQ1nb7uuqnlQqBBmPdYMwbvnoetJ+r8sjhc0BT8qOupvjzsJ752bSW/IHijEui1v3teeXE4RMwxY6J6DsxJAtETiHec+frX67g72tlJ0VNhiXEToECPm3gi6sN2arvt5oq7v7VmTM6aK17RDxIgARJoHQJjY3vsIe8W9/cfffTwcHTtSqV+8hMV5lddFTQ1GgISwhyrtEO4RedJbSW5tnq77z/8sDzg8DyJZ0+3UmGOByDTc4Y7Mza2dGm4d8+1fNk2b+oDmdJa4R/ug9LPeUwCcRLAOBPjzsbWvXChln/44Y2th6UnjQAFetJ6LBZ/jz8+lmpCVPJTayEuYFYSIAESIIEqCWj0ZsuWk07atUsuwSyqKi8vky2Vuv56FeaXX55EYY5m5XILFgRLYeSIN/W8yu+elwr0qLwbH99991o4eN66dZUi/XgQwwh6VD3FcqIgEO+4071xdxQMWUbtBCjQa2fXwle+/vWuNS7e1TVdaz39IQESIIHGEcBicKOjK1fWEiGd7tnOnSLIUqlLLw0S5oiYYgq7axHz0vaMj+v+76Xnm3Usi8NVErwQ6HhlICo/w05xLywOF7ySAe4DCHMI9aj8ZTkkUA+BeMedFOj19FUrXkuB3oq9WkOb9B2Yri691J1t1Z60ZsyItRoaxktIgARIgAQCCTRqMbh0+pprRJh73vh4UMUQjhDorguzbHa33YIeNAS1rbHn9MGH7z/1VJBAh+CFQIfwrdcn7P+ey82fH4YDI+f1kuf1zSSAcSfGoY31BduuYRze2NpYuvsEKNDd76MYPXzZy7Syzs4YK61YVbyraVZ0hR+SAAmQQEsRiH4xOAjIG24IeucYArLTmjEQ6jjvKtxsduHCWqZ2R90e33/kkSBhjnrwoCMqYY5yx8eXLq2l/b7/2GNB9wHKhb989xxEmLpI4CprjfYM426MwxtdH8t3nQAFuus9FKt/xx4ba3VVVHa3tSoyMgsJkAAJkEBVBMbG9tpLF4N7+cujXAyu2sg5BDoEWlVONyETVrFHBLkJLhRV6Xn9/ZUEOh50RM211sXhGEEv6j4eJJTAH6zF5fyrXhVXTazHbQIU6G73T8zeufOHYcKaMZutxYyB1ZEACZBASxLQxeA2b169WheDi2prn3CRc0RMIShdRe3O1HYQCn6XG5+CJ1KcrzcN++657LcidXreE09UeqAQ9VT8etvJ60kgiADGoRiXBuWJ7px7gbLo2saSwhCgQA9DqwXz6rvnHR3aNHem1vzOmjHx/EFswY5lk0iABEighMDOnRoxHxtbtiyaxeC0gmoj55jSHnWEt6SZkR2KQK9landkDpQU5HkDA5UEL4R51HzDrt7ueU8/LX56XvBdBv8g0OF3SXN5SAJOEMA4FOPSxjr1spcVj8sbWxtLd5cABbq7fROjZ0ccoZW5szjFL63FiIBVkQAJkECLEsjlenvlXeDt29/0psox2LAAwkXOkybQXVu93ZjBwUo9BKGLtFLeMJ/JFPcwDyr47nkYusybFALXW2u0txiHc1/0RpN2vXwKdNd7KBb/jjoqlmpCVPKwtRAXMCsJkAAJkEAggW3b3vIWmdIe9bvU6fRPflJptXa8a44UkdNAJx08KYvDhVm1vNFNiDuCns3qqu0TE93dlRZ7K233TO+eI3Ie9WJ2pX7wmASiJBDvtmvuzGiNkiHLqp4ABXr1rFo4pzt/CDCVaKe1FkbOppEACZBAgwkMD++/v2x0NjBw2GGjo9FV5vv33SeCzfd/8Ysg4Qbhhf3N8c55EgV6mMhxdITLlVR5/gMi50jLlVLt+V27XvrSkZFqcxfyed5jj1Waio/7APdJ4Ur+RALuEsC4FOPUxnrqzri8se1k6eUIUKCXI9NW5935Q3CzNWP0HZy26gQ2lgRIgAQiITA5mU6LQNqy5aSTdDG4SIr98zvFGzdKuen0174mwtXzimUYIqPd1ozBPuc4H40X8ZXi2iJx1UbQoxLoIyP77BO8k325PtA9ATzv2WeL7wzND79wPyAtVxrPk4BLBDAuxTi1sb65N7O1se1l6aUEKNBLibTJsf6hWbJEm7tihSvN/q01V7yhHyRAAiSQPAJ9fccdNzRkTDa7aFE0EWApzZhM5stflmW/PK94czZERBExR4oIKYRZUkhOTHR1icDM52fPDpoh0Lx2VBdBR3/U62cqNTTkhxgl+v7jjwu3cnsDwK+k3hf18uT1rUEgnnHqypXF4/TWYMdWVE8gxJ/e6gtlzqQQwOJw7vjLd8/d6Qt6QgIkkAwCiPRu3frmN4uE27Hjta9VSV2v/ypPM5nzzlNhvmnT1BIhvBEpR+QcU9rx+dRrkvCzLA4XzYONqFqLN+GLH4yUlg7eSEs/D3ucSg0O1iLQy9UDgc7IeTlCPJ8EAvGOU90bpyehj1rBRwr0VujFmttw2GE1X9qgC7dZa1DhLJYESIAEWpDAtm0nnCDCfOfOY48VYY4p7vU2NZ2+5BIRqr7/wANTpyxDAGJVdghzHEOI1Vt/s67HA49m1T+93sHBSpFp9AfS6dfXdsb3R0fLRcODSpR3zyvNOIAwRwQ9qAyeIwHXCcQ7TnVvnO56/7SKfxTordKTNbXDnV/89dZkSqFYTY3hRSRAAiTQlgRGR/faK3jH6dpw+P5vfiNCK5X6+c+DBBcEFoR5UldpL0fHxf3Py/kq5yHMkVbKW81nmIGBVyWquUbyzLR6Ox7c4P6ptlzmIwGXCGCcinFrY31zZ5ze2Hay9FICFOilRNrq2J1f/N9Yayv4bCwJkAAJ1EhA45o7dx5zjEx6zuV0O6waC3v+Ms9bu1Yiten0d74TNMUbwgrCHO+aIzL6fEEJ/8G17dVkHf6pMxjK4Y1KoOdy8+bpg/Lq4ueet327+OR5fX1BfsIv3CcQ6uXawfMkkAQC8Yxb3RmnJ6FPWsnHdCs1hm2ZmYAuOjFnjubcZ5+Zr4gnx33W4qmLtZAACZBAMgmoYHrmmbPO2rHDmJGRffcNt8p2cKs9b+tWEVaZzFe/qu+aF8tzCCsIcgh0nA8uNbln5R10l2ZyyertlWhCAEclfCcmOjqChHY5HyRyHjTTAvlxn+ABD84zJYEkE4hn3Lr33jpu7+3V3/PKfwuSzJO+FxNgBL2YR5scvfCFrjX0aWuueUV/SIAESMAdAgMDhx4q+5lHJ8x127RM5gtfUGFevCkbBBUE+WxrEmEXK0ytdodQNJ74fvEDimhKraeUwcFKV0OgI62Ut5rPxsaWLQvzyoTvr1tXSdDjwQGEejU+MA8JuE4gnnErZrG4N253vX+S7h8FetJ7sCb/3ftF77dWU2N4EQmQAAm0OAEdpO3YcfzxlaVadRg8749/lIhnJvPpT6sw37xZroTAwyrsEORIcR75qqstebkymW3b5AGEK+Z5u3ZVEsDoj9I0rP/5fHe33Bfj4+G25/O8xx8PE0GHn2H9Y34ScIlAvOPWF73IpbbTl8YToEBvPGMHa3BHoD9pzZgJaw6iokskQAIk0GQC/f1HHSXvmo+PL15cT2wXi79lMv/+71KO5+lmbBBMWIUdghwpziNfk3E0vPqwU7wb7pDRVdzL1YN+QaS6XL6Zzo+OrlypkXNE7Wa6Qh8beN769ZUeIMAvpDOVys9JIAkEMG7FOLaxPrszbm9sO1k6CFCgg0Rbpe48ibvVWlvBZ2NJgARIoCoCQ0MvfOHYmDFbtqxeXTz5vKrLn8+USv3wh/JOdSbzX/+lwrz4DWtExiHIkWIq+/MFtfgPExOdnSI0Bwdf/GJ5lcAV87xt2yr5AuGLtFLeSp+NjKxcGWZNA8/btEl4eV7w/uzwB1PbcVzJB35GAkkjEM84lgI9afdFvf5SoNdLMJHXH3igK24/ZM0Vb+gHCZAACTSfwORkJiPCZ8eO171Op7RXG9Es9t3zHnpIph6n01dfXSzJNR+E0yxrxmAROJwvLq31j/CO/+RkuEXSGkdG5bLvr1kTNIUckXM8SEFaqz+FCHp1JVQbOcf9BH+rK525SCAZBOIZx7ozbk9GryTfS4fesko+TJdboKtAdnSoj8uWueLrU9Zc8YZ+kAAJkEDzCAwOHnKIRG63bDnxRImY5/M9PUHCrFoP0+nLLgsS5rgekXMsAgchhc/bLR0YOOywkRF3Wu37d98t/e95wfF89Bf6sd4I9fj4kiVhXqHw/ccfrzS1Hf7V++DAnR6hJyQwnUA849jly3Ucn8nog64wyzhO95ln3CfACLr7fRShhytXamGpVISF1lXUNmt1FcGLSYAESCDRBPDOc1TC3PfvuEOEXbnVtSGcEDmHwEs0xAicr/cd/whcKCrC92+9tdIDGvQb0qKLQxxMTqZSIrTz+dmzK9VXWmS1i8PhfmMEvZQgj1uBQDzjWIzb9967FZixDTMToECfmVEL5dhvP9caM2LNNa/oDwmQAAnER6C//5hj5C3eeiPmUoJ4nU5ffnlQJBQCCYu+YUo7zsfXYrdqKgjU3t4wArVxrdAXG3z/vvuC/EF/ITINgY7zYf3K58O2W73yvCeeqBRBR0QfaVi/mJ8EkkAg3nHsvvsmgQl9rJ8ABXr9DBNUgjsCfYM1Y3TKToIQ0lUSIAESiIgAIud9fcceq+up11dwKnXjjSLRZfGuoJIQyYQwh8ALyttO53K5efMgOV1ot+/feaf2Y9BjlsI+9PUKc7Q1m503r9KrEMiH1PM2bhRhXm7qPQQ57jcc43qmJNBKBDCOxbi2sW1zZxzf2HaydAr0troHVqxwpbkPWHPFG/pBAiRAAvETiC5yru8op1I/+lGQ0EJktdNaYTE4nI+/5W7VmMvNnx/ErVleplLhprbX249jY8uWBT8KCCbg+9VtqwaBHlwKz5JAaxGIZ1yLV1Vbix1bM50ABfp0Ji18xp3F4R6x1sKo2TQSIAESKEMg+sj5dddpxLW/P6hKRFoROadwKqYUNoJcfHWURzt2aGT6oYeCpo5DiGPmA1Kcr9WT0dFly8IsOSXvngf5h/pxfyGt1z+Uy5QEXCYQz7jWnXG8y33RCr5RoLdCL1bdhuXLq87a4IzxrHrZ4EaweBIgARKogUB0kfPt20UopVI//WlQBBhTixE5R1qDyy19iSsR9FTq9ttlqr3nBctfPGhBGpXwHR1dsSLc/uePPx70bjxuEghzpDjPlARamUA841oK9Fa+h6a2jQJ9Ko2W/9mdX+wt1loeOBtIAiRAAs8TiC5yrnI8kznvPJmaXO5dYKzSPtuaCHmx593hD38hkM26McXd92+5pZLwhTBHWq9Az+e7u6W+bHa33YIe8Ey/QTSX5z35ZPAjBL0C9xkeENXr53Q/eIYE3CMQz7jWnXG8ez3QWh5RoLdWf05rjS5ekf7LfvdLl07L0KQTu6w1qXJWSwIkQAJNIBBV5DyV+sEPRCr5/qOPBgklRMqxvzkEXROanIgqC4vENcddLLrm+8GrokPoYko7BHC9wnd0dPnycFPbn3lG7jfPC463w0+k9frXnN5grSRQG4F4xrW77148rq/NV17lPgEKdPf7KAIPFy3SQnxn+nvUWgRNYxEkQAIk4DiBsbHdd5dI9/btxx+vG2jV5rDvr1kjEc9yU9oh3CDMEUGnUKrMu9kR9Jn2O4cwx4OWqPozrED3fb57XvlO4qftTCCecS3G8RjXtzPx1m67M4KttTE3u3VLljTbA9Q/Yc2YnDWcZUoCJEACrUdgYqKrSyKOzz13xhl9fbKtZEdHUMR75pbru+bp9AUX6JT24isg2DCVHYvBIZJZnJtHpQQkgl7dFO/SK6M59v21aytNbYdAxwMY9He9tYcV6Fwcrl7ivL6VCWBci3FuY9vqzri+se1s39Ip0Nui7935RY5nEY226FQ2kgRIwFkCnieubdp0yik7d4Z5x7e0QSobC++aB8ffIciRQsiVlsbjYgL5fE+PCOPJyUymtgcnxeXVeuR5OnW83PV40II0KoEu26uFm+JeeXE4+Mf7r1xP8nw7EIhnnLt4cTuwbOc2UqC3Re+784v8pLW2gM5GkgAJtCmB7dtf/3qR0kNDq1aNjdUOodZ3zaMScLV7nowrmz21Xe4QIeV58hhnuqEfIXxxPD1nuDPZ7MKF8ugnn589u1LkvlCq7pLueU89VelBBoR51P4W/OBPJOA+gXjGue4E3tzvkWR6SIGezH4L6bU7An2jtZDuMzsJkAAJJIDA0NCLXiSCfMeO170uONZdXSNmetccU57xrjkWhYMwqq4W5hob22MPlZ7NYeF5zz5bSfCiP5FGJdDD73u+YYP46XnBtOAfBHpUfjanV1grCdRHIJ5xLt9Br6+X3L+aAt39PorAw/nzIygkkiI2WYukKBZCAiRAAk4QGB9ftEiky6ZN73qXxkJ1int45yq/aw4hhKnsWAQO58PX195XhN3/O2pazZraLu+eB6/DHtxC31+/vtKDBAhzpBTowRx5tj0IxDPOdWdc3x69Gn8rKdDjZ96EGufNa0KlgVVutRb4EU+SAAmQQKIITEx0dopwkUXgRJhPTMyaVUnIzNS4dPqii2TqsecFx98RKYcwpyCaiWjlz8Mukla5tPCfikCvNMUcD16Qhq8h+Iqw7ZbF4Sr5ifsQflKgB3Pn2fYgsM1ao9vqzri+0S1t1/L/sj92uza/Xdrtzi9yPPtEtku/sp0kQALNJLB58zvf2d9vzPj4kiXBk3+r8873775bBFAqddddU4UQBA+210LkvMOa7IMuVl0dzFUggAcp9fZbocTafvL9eKe4T06mUvIAaWxszz3D3K9hV2+vjQavIoHWINBvrdFtYQS90YSbXT4FerN7IJb63RHoQ9ZiaTQrIQESIIGGEOjrO+44Wd5rcPDgg0dHw1eBd4/T6a9/XYSS7z/55NTIO4Q3BDneNacwD8866IrCO9i1vooQVGr4c3FPccc795OT6fTU+6285zoR3vOefrpSftyvSBlBL0+Un7Q+gXjGue6M61u/R5vTQgr05nCPuda5c2OusGx1w9bKfswPSIAESMBZAsPDL3iBSJZt2970poGB2t30/fvvl0h5qTBHiRA6mNKOFOeRj2ltBJr97rnEsNXzrVsrtaB06nilvNV8Fn5quz448ryp8zoKNcE/pBTmBTb8qX0JxDPOnTOnfQm3R8s5Oa4t+rm725VmjlpzxRv6QQIkQAIzE8hmFyyQd8M3bTr1VF0Err6J5eWmDEPgYEo7Upyf2VPmqIZAWKFaTZlh8mAGRbn4PR7EII2q/8O22/cff7yayDkFepjeZ95WJxDPONedcX2r92ez2keB3izysdbb1RVrdRUqG7dWIQM/IgESIAFHCBQWgXv3u0WYV79vdHADUqmf/1yEvu/feuvUmCQEGKawY2o7tlPD58Gl8mxYAhJBz2bDXhVd/pmmtkPwIo2q/+Xd8zDt5uJw0fU5S2ofAvGMcynQW/2O4hT3Vu9h2z53fpHz1toCOhtJAiSQUAKTk5mMRA43bvy7v+vr00W1wgibQrNVhqfT//u/8q55KvWLX0wV5oiQYgo73jUvXaW9UB5/qodALjdvnjwgqfdBS+0+6NJsqdQ114gfpQYhjvshqhkUsjic1CXbAQbVW+oHjj0v3PZquI4pCbQzgXjGue4E3tq5rxvZdgr0RtJ1pmwKdGe6go6QAAk4SwCLZ23c+J73iDAfGdlnnzD7RRcapu8YYxG4VEpXacfnEOYQ4rOtGQNhhs+Rn2k0BHx/bKy+lxPq8yOVuvpqnUERvOgaZkzgPogqgp7NLlyIRwOVpqwXWqdLH2IqfuG8/oQHCfAP9yvOl+bnMQm0E4F4BLo74/p26ts420qBHiftptXV2dm0qksqnrBWcpKHJEACJNBEAogwPvfc6afLVHYsBhfepZ07RQBlMl/+sq7OXhyBhJDBFHYIc0xtx+fh6+UV1RDw/ZERee/b90dHJcV2a9VcG0Ue3//DH6bOoCgtExFzCPWo7ofx8aVLVaCX1hh8jMi55wXLefiFlMI8mCPPtieBeMa57ozr27OXG99qvoPeeMYO1KDT2xxwxExac8ET+kACJEACSmDz5pNPFmE+NPTCF2J97XBsVMhkMueeGyTMIWAgxCHMESmF0AlXJ3PXSsDzstlyC7TVWmbl6/T+8LznnguWvHo17gNEpnHfVC575k/HxpYsCSPQfX/9+koPEhrl58wtYQ4ScJ9APOPcNAOs7t8KdXlIgV4XvqRcTIGelJ6inyRAAvERwLvmAwOHHlrLfubw1PdvvlkEje+vWxckwCC4EDmHMI9KgMEPppUJTEx0dUk/5fO9vZUEaOVSwn/qeVu3yn3hecEvTOA+gPDFcfiagq8IH0GvvHo7Ivy4r6P2N7gVPEsCySAQj0B3Z1yfjF5JnpcU6Mnrsxo85pO2GqDxEhIggRYnMD6OyGKt8dSREUGUTl9+eVCEEsIFkXMIdJxvcbzONW9sLNxU76ga4HkbNwY9uEH5EOYQvDgfVVq4z2cqUe9i33/ggaAHGLhv4SdSnJ+pdH5OAiQQFQEK9KhIuloOBbqrPROpX/xFjhQnCyMBEkg0AWw31df3ylcOD9felFTqqqtE0nie7o5eWhLeKcbq7Ig8lubjcTwExsd33z3oQUqjay+32BrqhdCFUI9K8MraCvJgQFZvr6bdvr9mjQhzzxsYgG9TU/iJ+xr+Ts3Dn0mABOIgwHF9HJSbWQffYWgmfdZNAiRAAiTQcAKyirWsnv3MMx/4wI4dxuRy8+eH2W6q1EHfv+UWETKp1HXXBUUaIWDwrjlWay8th8fRECidUorjQqpCdWRkzz2DJ5lH40e5Unz/978Puk+QHw9ukEYl0LNZbKtW3dr1vn/TTZX8xH2NlAIdPciUBEiABKIlQIEeLU9HS8NQlFPdHe0gukUCJNAQAjp1ffPmt7+9vz8KYa5CK52+4AKNnBdPXIZwgTBH5JxCpnLnQkiXCtN8vrNTvr3Gx3t7hXcuN3euHOdyc+aIkCwcz5079TifnztXeiafnzdPzk9MzJmjPVXrqwyV/S/3qeetXSv1+v6jjxbfKXoF7gvcN1EL9Gqn9EvEXMgggl7aHvQL/EOK86X5eUwCJNBoAhjXN7oelt8sAhTozSIfa734RaZAjxU7KyMBEmgqgf7+l71MprCPjOy7bz2RU9/XfczT6W98oxphDoGOKcFNhdDEyvP5nh4VyB0dIlAzmR07ZGJmNtvdLRz7+l796qEhY8bG9tormxXBPW+e5BOBLddNTnZ2BgnbJjYpVNW+f8890o5yhvsDAj1qwVvtu+fp9Pr14qPnBXuLBwnwF8fl2sXzJEACjSaAcX2j62H5zSJAgd4s8rHWK0MhMe6bqBz4PwmQQCsTEKEnw5dt2044Ifht2upa7/v33iuSJZ3+z/9UYV48KEIkEYIcKYRMdbUkNxci32gB3nXeufPYY+XByMDAkUfq6vgaue7ufvDBTEb2mV+1SgT55OSsWUkW4Gh3uRSrt5f7HEIXafQCvbpF8Txv8+ZK/QD/2uW+LtdfPE8C7hAo/i5yxy96EhUBCvSoSDpdDn+Rne4eOkcCJBApgS1bVq/etUumNtcWgfX9Bx9UYf7Vr6owx0NOdRPCvMeaMUkV5hDYSPP54m3IsB1ZLqfbksmxfJvkchoZl/N6vGCB8Bob239/JRU8lXxo6LDD6pnJEOlNEkNhYQV61C5VO8V9cnLTJum/4F6T82IyBV4sai9ZHgmQQHgCxd9J4a/nFa4ToEB3vYci8W9sLJJiWAgJkAAJOExgYODww2Xjs6GhVatq+6un8d50+itfUWEucd7phkXf8I65a5HF4eH99xchPDy8777CYbrQ7ulRYV0Q3iLQZK7A9Na6dEb7B+9Ke94zz0jk1/NkhQERkJqm0wMDMpU+nZ47V1q0a9fHPtaM4exMAr1U+OK4XuKTk+m0cMlmd9utunY/95z2f3DNEOZIo/IzuDaeJQESmJlAbd9wM5fLHK4QcPzL2BVMSfejno2Eom07vtgRsYm2dJZGAiTQjgTwrvPWrX/zN/VMaTdm1izlJxOxxdyK905MZDIipLJZXYU+m12wQIQ20lxOj3ftOuooeVAxMdHVVWnqsrbRxf/1OwtCPJW64w5pt+/fd58Kcn1wgpkM2F8eD06w7/zw8IoV0oMymyJ4I7xGtR0PdirX2ijBOz6+eLHcF0KsuhZWN8Ud/lZXJnORQHsSwDi3sa2Xv/C0ViZAgd7Kvft829z5RcYfLgr05zuHP5AACdRJYMuWE08UEZbPz55dKRJYvhpEZm+/Xa8PnuyLxbyQ4u9Z+XKLP5mc9H0RmPKOvArt6QJbIp7j4zg/f74cSyRUBNfERG+vCu5g/4prS8LRzp3SHizCl0rddZcK8T/+UYV4Pi8tBW8I8a6uBQu6ugrny/VDYZuxeFl43rZt6n9wvfAXghfHwbnDn612cThZBUBK97wtW/Sn4LpK/Yza3+BaeZYEkkkgnt8PdwJvyewl972mQHe/jyLw0J1fZHzRT1iLoGksggRIoG0JDA4edJBM9BscPOQQldi1oUinL7pIhHAq9dvfBgl8RGZ7enp7e3pEGC5a1NEhQlqFswhoidQGRbZVYKvgzufnz9fyq41s1tYe167CVG/fv/NOFeAQ4o88IsLQ9z1PiIgQF65dXT09IsAhyBEpDzvwzWYXLtRIcrxE0N5ytaId+D4sl6/W81isb6brU6lnn5UHIJ4XPFME/uEVDhzPVC4/J4F2JhDP74k74/p27utGtp0CvZF0nSnbnV9kfNHnrDkDiI6QAAkkiACmbm/ZctJJ+tZxfc7ncqedJu8qT07qftvGLFokwmVycvFiSTFluL9/8WKJ1IuUrK/GVr16xw4R3KmU7hfv+zojwfcfe0yFuAxdjZEp6LKnyKxZc+fKSwV4AFIqxCFka6UlAl0ekMRv27ZVqhMDeKSV8tbymfx+BD1oKi0rnX744dJzU4/hH/pl6mf8mQRIIJgAxrnBn0Z11p1xfVQtYjnFBCjQi3m06JEOKV1oXDx/uFxoKX0gARKImsDIyH77Saxv+/bXvW5wUKa0z5lTjRCZ2Y/eXsmTz6tQnzl/u+fo71chjnfDb79dj6dHxFWIz5snQrzTmizeJiaRc7HCKuFRUx0fb04E3fefeKLSfYl24/uw3gcRpdxkNX7pj5kslVKBXm6WAfxDf0Xt50z+8XMSSCIB/N401nd3xvWNbWf7lk6B3hZ939fnSjMLi/cM/9lc8Yp+kAAJuExgeFiF+caNZ54pf82wSrXLPreGb319KrwxJf3OO/V47Vppn7xRj3fEZWp6Z2dvrwjymYR4o4Ue7g9517+c+Gxk/3je2rWVBDIEeqOE78REd3elBwR499z3H3pI/CzHCEIDaaP7rZF9wrJJIC4CGOc2tr7KC1A2tm6WHgcBCvQ4KDe9Dnd+kTGVselI6AAJkIDzBEZHly+X9bA3bnzPeyjMG9ddWCQM74jLYm0qxNetk1pL3xHv7OzpESGOgSiEJoQnhBzSxnkeXDJWtZfYfHCORp3Vx86e99RTlQQ6eEH4Ru3NxMSsWZXqz2See062oZuc3LUL681P9QH9+P/aOxM4Oapy7Z+q6p5JJpM9JAFZwiIQ5MoqqAh6WVwRlQiGRUEFF1Cu+ql41XtxuYKCfoiKbBG4fBBBVgVlxyskshOWJIQYluzLZJJMZt8/3vPex+7p6b1r6+7n/f2SM1V16pz3/Kur6n3qnDoFP7Gcnod/kwAJZCcQTpwbn7g+OwWurZQABXqlBKti//icyPhucFVgo5MkQAKREOjrmzlT3h1euxY95o2N+QRHJE5WYaX4bjiEeCIBIb5qlUhZCDHMmt7YOGGCCHEsZwo2CHCkcUES1eztrrt8ufRcO072Xyv4gqPf3CDMZc6EfO/eNzS88ooIdJmrNdvXlIP2My6/E/pBAkEQCCfOjc/I2CAYssw3XwUjhHogEJ8TeZy1emDONpIACZRKAD2fa9d+4Qty1So8VLfUGuojv+O89ppIRM/TWdM97+mndXn9ehHi6LmF8G5omDBBhqhjGQISQg1CEmncKcq75/kEalD+FxraDu7g67cfmzd/5CPt7TJkvbk5/xD3xYuFT66vqcBP/B789pPlkUAtEwgnzo1Px1stH8so20aBHiX90OpuaQmtqgIVTbBWIBM3kwAJ1BUBfBYK75gPDEyYkOu92FLAOI5OWjY8vM8+YQ92LsXPcvNCiLvuggXCSwS5CvHWVmkvhCCGojc0TJwoQhzrIcSQQoAjLdevqPeL6vNqrrtsWT5hjAce4O8fZ/11t7cX+tyg9uwPDr74YvYPq+mRw+8BqX9+Rv3LYP0kEDyBcOLcTZuCbwlriJIABXqU9EOre+PG0KoqUNEO1gpk4mYSIIG6INDZOXu2DLHdsOG006Q/AEN0y22846xbJxIkkbjhBukhdN3nnpPlgYFzz5VZwwcH3/veav4CueO88YYK8D/8QQX5M8+IIEwXfvIBuMbGcePSJ2tDT2im4KpV4RX+59W0v95xVqxQCZz9Fwz+EOjZc5W+tr9/6lT5PRQacZJIrFsnv//h4ba2bA8S0n9H6bPsl+4R9yCB+iUQTpxLgV7rvzAK9Fo/wrZ98RHoM63VBXQ2kgRIIAeBLVuOPrqzUz6X9qEPyZDcSifzct1HHhHBkUhcc41IJccZ2f8+ZsxNN0kfY3f3QQdJOjQ0YUI+IZXD7dBXO87q1SMFOWZTdxwRWomE9I2nJmvD7OnoMYcghPAKvQERVRj259UwksFxsvdLgz+Eud8PRnp6dtkl22RvmfiTyWXL9PefuUWXg/Yze61cSwK1RSCcODc+cX1tHb34tIYCPT7HIkBP4vOkbSdrATaVRZMACcSWQHv7gQf29Igw//CHVZhX5iqEUSIxb142YQ6BKh+dGjvWmHHj7rxTepg3bTrjDD/qr8z70XtjBIDnoYf88ce1hxyCPJmkIB/NDWuGhnQywbA/r1bs0HaMZIC/fqXFCnR8Vi1b77n4AoEelJ9+tZflkECcCYQT51Kgx/k34IdvFOh+UIx9GRDouC1HN8hzlrXYA6ODJEACARDo6tp332yzRpdelX7OKpm89FLpOXQcHWKMciA08LkbzKrb0PDSSyJwOzuXLpW+zs7O/fbzxx/UXGqqPa6JxNVXSwtc97HH5CqNWcDRDvSMj7WW6jFHjyzylVp7reXv65sxQ38J0k8cnhWaHA7HB8I3/B50jBdZsmTk2JKRjPBAC78rv/0cWRuXSKA2CQQb5yKOj8/cUrV5FKNv1ZuD5Gi1TEBvsAheN2yIuq27WovaC9ZPAiQQBYGurr33zj4IuDRvEokrr5SrmuOM7EWAoMAQbwhzCCPUMn36HXdMmCD79/aGK+XggaaJxE03STs879FH04V5rnZkCnQIv5Gl1u8SPs8XNgHXfeUVhM3pdeM4Zgrf9DyV/a0P23t73/KWfEPc8d3zwcGtWxENpNeL3xGEOZbT8/BvEiCB4ggEG+fKlzjEsp3JxfnHXNVBgAK9Oo6TT16uXu1TQWUXgxs/AoGyC+KOJEACVUOgu3v33UWYVzo7u+fdd59OjvbEE9kEEa4rEOboedaAJoUrkdi2Tb4DPW3avfeOH59aH/xf+njC8+bP13bce296OyDkIMTxuR6MBMD24P2szhp6e2fODDNsdZy1a6Vv2nGyvzCB3x2OG+5/ftHt7dURA8PDDQ3oI89WdjK5fLlODjf8po3OAb/wIAt+j87JNSRAArkI4P6D8ylXvsrWRx/HV+Y/9y6WAIe4F0uqJvLhxD788Kibg4Czw1rU3rB+EiABPwkMDyeTIgRaW487rqPDmK1b3/teHZReXi1419zzbrghfYguhAQEEIQt0kKB0qRJCxc2NRnT3n7wwd3dxvT07Lprvp7I8rwXAbd4sQjxZBI9/3jtSEuE/5mCHIIJ28utv172C7sHHZ/xy8UXvz+M6MiVr9z1vb3FTQ7neUuXyvmYfu6k1wk/8XtL38a/SYAEiiOAuLa43OXmQhxf7v7cr1oIsAe9Wo6UL36uWuVLMT4UEs53In1wlEWQAAkUTQDvdL/xxre+tXmzCHOdrV0GcWfructdsEwlJ8J22TLZL/NdcwgK9JCjxxxp8YJWvZo+/dZbJ06UGtP7s2W5UtP+3GTyV7+SvxxnpDDHAwYIOPiPdhXfjkr9rI39pQc9iAcsueh4nn5/PnM7jiuOH45vZr5Kl4udHM5xlizJ9svO9BM9gJX6xf1JoB4JhBPXUqDXy2+LPej1cqRtO1eujEtzp1szZp21uHhFP0iABMoh0Nr6wQ9KT/mWLcceK2n5BkF7ySUitFz3pZfShT0EBQRsszUR8GLyGECs9NobG9evl+8+T57817+OGycPFo45Rj4DV6m5rg7Fdxz5yvtow4MG9LygHWjn6D24JhuBwUGZp196iCdMyCZEs+1TyTrHWbVKfpeuu3hx+u8TZeL4QZjjuGK7X2khgZ7+7nm2BxfwE8K83PPHr/awHBKoZgKIa4NtwxtvBFs+S48LAfagx+VIhOLHihWhVFNEJcFOolGEA8xCAiRQMQEMKZbvmlcmzFVWJRLa01ysMIewhcCA4Ci3YVOnPvhgc7MI/s2byxH6mfV63gMP5BpWLHkhiCDkKvU/s/7aX9Yp/lpbP/Shyn5/pZHyvHvuyXdc8XvE79Pv4zo8nEjIg4He3h13zPfOfUPD8uXyOx60NrqNeEAU1AOE0TVyDQnULoFw4tpXX61dgmxZOgEK9HQaNf93fAT6PtZqHjgbSAI1TWDTpk98Yvt2aWJln25MJH73OxEanjdy8jcIm8wecyxju1+QZWZckXzTp992mw55r6zk4eFJk/LNEi9TdonQQlpZbfW3d0fH/vvLyxBtbe96VyVzHBRPrq1Ne84XLMjWU58pePE7Lb784nLKrO0qzPO/OpJILFsmv79cv69Mf4urnblIgASyEQgnro1PHJ+NAdf5R4AC3T+WVVAShsbke/YfTjPebi2culgLCZCAvwTa2w86SIRRd/eee1by2TTPu+UWuRp53oMPpgseCG/0LGdOngZh4W+rUqU1Na1YId9LnzDh6afHjk2tL/WvwcH3vz/fo4sha8b0WcstpEqtt17yYwRHWO2VERHyO831iSP8LtFzjmW//Ss0tB31ue7SpennFdbj/IJ/6PHHdqYkQAKlEwg2rkXc/vrrpXvGPaqRAAV6NR61MnzWGzJC6egnmdjNmgQ6YmU0iLuQAAmETgBDaltaPvYx7TkvzwXPu/deCTcSidtvR9iRXhKG3EKYFzsre3oZfvw9bdrdd8tn2MaOffVVEeyl24wZ+a5vEOj91ijQS+Xb1zd9er4h3qWWlzu/ytxcryzgPgahC4Geu7zKthQS6Mnkhg06tH3Llmx8Mv3FqxaVecW9SaA+CeB8QlwbDIVVq7SebLNJBFMjS42WAAV6tPwjqn3ZsogqHlUtAu9RG7iCBEggNgS6ut76Vnm8t2bNuee2tso7rc3N2XrmCjnsuk8+Kft53nXXZRPmEDhRC3O0w/O6uqQHfOedr7hiyhRjdtzxhhsmTZIHC1u3FvOO+vBwc7MI9KGh446T/MPDI/fC0GMI9B5rkl8MXjDNRaCvb4cdsv2OcuUvd73jvP66DG13nLa2bGUgQMeDpaAFb6HPq+Hd8wFroz1Gzzn8HZ2Da0iABIolEE4c+8orxfrDfLVBgAK9No5jia1YurTEHQLLPs1aYMWzYBIggQoIbN9+yCHyffC1a886a+tWEY5jxohQKd30DeFEYt486dHL7FWGwEHPI9KghU6p7WhufvHFMWOMmTXr4ounTTNm6tT77pNJ5Rynry+zTVq2DpDv7z/7bJXmxxwjs8WjvagfAr3dmkz+JcYedfDJlYpAz9ZDnCt/uetd94UX8j0wgeDFKxnl1lNoP5x/hdqdTL7yijxYKjQ5XND+FmoPt5NALRAIJ45dsqQWWLENxROgQC+eVQ3ljM+JHs6slzV06NgUEgiBAD6XtnHjKadon2H+yagKuZRI3HKLCvPsPZAQChDm6EkvVG5U2x2nv18E+ZQpDz0kAn3WrJ/9TAT7+PGLFomAz2WDg5/8pAj0xsbm5sbGlFBHTzreRWdPei6Cun5gYOJE6TkfHm5sLO+BUf7yM7e67osv5hPoeJCE33Hm/n4td3bOni0PbkY/4hpZQ7HvnrMHfSQ3LpFAOQTCiWPj07FWDiPuUzoBCvTSmdXAHvE50fezVgNI2QQSqGICw8M6ldnGjSedJBIa3zWvtEmOs3Klznp9333ZBA56HiHMMet1Zg9zpX4EvX8i0dYmPeQzZ950kwyB33nnyy+XIfGNjWvWyPfZYYODkyYJB8874QTpW59kLfUdd7QbPeoQ7BDwKKfe06GhsWPDEObGyFSIIodfeSVbfTheEOhBP1hqa3vnO/PNVp9IbNwoZ3Jf36ZNKuRH/lLgL/zE+TcyF5dIgARKIRBOHBufuL0UNsxbPoE3n+XT6o9AfE7091gz5mpr9Xck2GISiJLA0JD2QK5f/+lPb9tmTFfXvvtmC+xL91EHHicS11yjPefZ5I0xEOZIa0UwjB37+usyqdyuu1522dSpxvT3T5qU/q606+rn3FxX31HHO/cYkgwhBR5YLv041OYeDQ0bNshIhHHjli6VkQidnfvt58/vdiQv9EQ7TvrRS+XB8UFPdFDHqb9/8mTxoNBXE5LJZctEoMur59l4ZPqbagn/IgESKJcA4thy98+/H+6d8Ynb8/vLrX4RoED3i2SVlKMBxPbt2iPz2mvq9h57ROX+LGvyFWUxTo4U1XFgvfVGQAZoG+O/MNcZZpPJX/xC/nLd5csRXqQTbrJmTLM1YzA0OCiBk153uH9r65PJXJPK6XFAu3EdDNfH6qtteDiRELL9/VOmZJfO/rQpLu+e9/TstlsxczfLd8+l5X19cocfzQC/L5xvo3NwDQmQQLEEcD4hji12v9Lyvf464vbS9mPuaifwpiSi1S+BRYvi0vaJ1uLiDf0ggdomsG3bu98tQ2X96zGHML/kEhXmzz2XTSBkCvNqHdJe27+O+Lduy5ajj+7sFCE6c2aQk8Q5zgsvZPsdgxCGtgcteAvN2g5/HGfJknz+QlCgxx/7MSUBEiidQDhxa3zi9NIJcY9KCFCgV0Kv6veNz4m/i7WqB8oGkECsCeC70Zs3H398e7sfrsrH1+Qd6osvVmH+/PPpAgE9wxTmfrBmGSCAz/5h2f9082b5HbvuunXpv2fUg981BDpSbPc7LfTdc7x7PjTU2prtgQWEOd899/vIsLx6JhBO3BqfOL2ej3UUbadAj4J6bOqMz4l/oLXYgKEjJFBTBOT72yI0Nmw47TSZBG54OJnMJjyKb3SmMB/Z0wgBg+/D1v5Q9uLJMWclBPSVgN7enXYqZsh3uTXJrO35zg8I8qB7zjFbe0/PW96Sr7347jnmMMhsNwQ6e84zyXCZBMonEE7cGp84vXxS3LMcAhTo5VCrmX2eey4uTTnaWly8oR8kUFsEWls/8IGODvm+dv5Av3CrIcx/9jPtMR8pZAoJcwiFwvUwBwmMJtDfP3WqvHMe9OfVin33PGjBi++dF2qvvHsujy5yzfaP8y5of0cfMa4hgdolEE7c+uyztUuQLctHgAI9H50a3qaB9IYN2sSVK6Nu6h7W5PNDYlF7w/pJoDYIdHfvsYdI6q1b//Vf5Z3d8k3nhE4mf/pTFeYvvZTew0hhXj5Z7lk8gd7eYN85T3kiH8GL3goNbYeHnrd0afr5iPVIKdBBgikJVE4AcSri1spLzFbCypV6X924MdtWrqt9AhTotX+Mi2jhE08UkSmULNOshVIVKyGBmiXQ3b377iLM168/4wz5fBqGypbeYAjziy5SYb54cboQgDDHZ9IwlB2Tv0EYlF4v9yCB0QT6+3fYIds71qNzVrZmeLi5ubIS/Nm7p2fXXfMNbU8kNm2SB9ry7rmOLBg5ezvOT7x7DmHhj3cshQTqk0A4cecajBsAAEAASURBVGp84vL6PMrRt5oCPfpjEAMPnnwyBk5YF/a1Fhdv6AcJVBeB7dsPOaS725i1a7/4xa1bjRkcHDduaKicNvT0yF7JJIT5yB46CG+8Yz7emjEQ5hAG5dTMfUggFwEM+c61vfL1cvbISK6HHsp23uB3jaHiSCuvN3sJ3d177aUvlWTfLu+ey+dJc717DkEetJ/ZveNaEqhNArOtBd02CvSgCce9fAr0uB+hUPyLz4UgnHd6QoHKSkggBAI6aVZr6wc/KO+Yb9x4yik6CZx+J7p0ByDML7xQe8yzC/NcPeYQMKXXyz1IoDCB/v5p04L87rnnPfywlO848hHC0YaeaPz+IYBH56xszcDAhAnygKCvb8aMfCMGkkl99zyXQMeDNAr0yo4H9yaBdAL/ai19TRB/x6fjLIjWsczCBBKFszBH7RPAJBTae2BMdO/fvdeaBEhiuSe9qf1jwhaSQG4CmIV9w4a5c0WQd3QccIBK69z75N+i536qx3zZsvSh7Aj0IUwyh7LjfM1fB7eSQGUEgutBV9nveX/5S7YHAPh9Q+hipEhlrcm9t/Sc68slufPIFtd9+WU5Tzk5XH5O3EoCfhDAdQBxqh9lji4DcTji8tE5uKY+CLAHvT6Oc85W6gUHg+iif2IHITDJWk63uYEE6pIAetZWrz7nnC1b/BTmP/mJ9phTmNflDyvmjR4aGjNGhOjg4Pjx2YaeV+q+6z7xhJTrOJs3ZysLPeUQ5ljOltePdV1de++Nu3K28hKJlhYZ2j401NIiDxQyBTqEBHr8cV/NVhbXkQAJFEcAcWmw59MTT4yMy4vzjblqjwAFeu0d0wpa9Le/VbCzr7uG846Pry6zMBIIjIB891mGuq5efd55ra3yubRddsk3eVRhR3QIbzL5X/+lwnz5cvaYF6bGHNEQkKHt+YZ6V+qV5919d7aec5SL751DoEMAY7vfaVdXoXfPX3lFJofLNbQdDxDQ4x+0v363n+WRQBwJhBOXPvpoHNtOn8InQIEePvMY1xifC8MHrcUYFV0jgRAI9PVNny7CZM2ac88VYT4wMGlSPiFR2KVMYf6Pf2QT5pj8jUPZCxNljuAJyND2yn732X10nCVLpOfcdV97Lf08QG4IXQh09Ehju98phvAXOs/lu+dSd7EC3W8/WR4J1COBcOLS+HSU1eMxjlObKdDjdDQi9+Xxx9WFfIPrwnHyKGsSOImFUydrIYG4EMA75uvXf+Yz8pm0oaHGxmwConh/9SvoyeSPf6w95itWpJeH8wzCfJw1zspePF/mDJIAhKvfdRTbcw6BHnRPdHf3W99azN3XdXXyxsyh7eCD8xk96FjPlARIoHQCOJ8Ql5ZeQjF7YNaJ+EzaXIzXzBMcAUqf4NhWVckaeGByioULo3YeF8QZ1qL2hvWTQFgE9HHUxo1z5mzfLrM4z5xZ2dBemdtdPpcGYf7qq+nCHD2EFOZhHV/WUw4Bv2dvd5w1a+Q8cN3nnks/H+AbzgsIcwjdoAV6V1d+ge55W7akv3sOf5HCP/iP+yi2MyUBEiidAOLQYM+nhQtHxuGl+8k9aosABXptHU+fWvPggz4VVHEx77BWcTEsgARiTQDvmK9a9dWvylD29vZDD8XjsvIczxTmI4fwIoCnMC+PLvcKl4DfPeied889MmReP1I4ui0Q5BDowQbmUr960tW15575etAdR3vZMLQ9swcdAh3+Ynl0C7mGBEigWALhxKHxibuL5cJ8wRKgQA+Wb5WW/sADcXH8k9bi4g39IAF/CGAI++bNH/5we7sxq1Z97Wsyf3Tlk79hKPuPfqRD2V9/Pb2HEAE7Jrtqssah7P4cVZYSFIH+/h12qGwkCTzbtk17zh99NNts8BC2EOYQ6jhvUIrfaU/PzjvL+To01NSUzS/U53mrV4uUH7KGtakU/uMBXGoL/yIBEiiXQDhxKAV6ucenVvejQK/VI1tRuxYt0t2lLy9am2VNvswuFq0vrJ0E/CKA75dv3Xr00Sqp/ZlpwfMefFB6Bl33jTfShTn8huDA98whRIIWIKifKQmUQmBwsLlZBCs+s1bKvtnyet7990t5jpNd7mMSOJwXELzZyvJzXaGh7agrkXjxRfk7s+cc2yHMcZ5jPVMSIIHSCSDuRBxaegnF7IE4G3F3MfswTz0QoECvh6NcQhs1UMcz/PvvL2HXQLPuZy3QKlg4CQROoLNzv/1kkGpHxwEH9PT4X53rLliAsze9dAhwCA+kYQmQdF/4NwkUS6CnZ7fdpGfZL/O8xx7LNxs8hC2EOs4bv+rPVU539157YYqo7Hn0cZvrLlok53cugQ6/0Y7sZXEtCZBAMQTCiTvvv39k3F2MZ8xTDwQo0OvhKJfdxnvuKXtXn3c8wZrPhbI4EgiJAGZh37TpxBNl8jf/TGV+InHNNdIn6LqrVqX3nKNHDT0BSBHI++cHSyIB/wl0du69d37hWlydjqPnheNs2pRtDzyownmB8yZogT48nEjI+drdvfvu+R5EJJMrV+rkcFu3ZnvAkOk/lrO1letIgASKIxBO3BmfOLs4KswVFgEK9LBIV2U9992nbmcLCcJt0L9aMwYBVLi1szYSKJeAvDFqTEvLxz4mwrzQ942LrcVxFi+WnrSGhv/zf2RSKRnaLssQFOghx3fMx1tLvWvOAL5Y0swXJYGurn328UOgu+4zz2QbWYK24b6CFOcRtgeVdnfPmiXCHHNS5KonmXzxRbmS5Hr3HH6z5zwXQa4ngeIJ4HxC3Fn8nqXkxGs2iLNL2Zd564EABXo9HOUy2qgBytatumv0n11DE2ZbwxJTEogngeFhz5OesQ0bTj1VvmO+ffthh1U2Kzt6yufNk9t6MvmjH0nqOC0tQgA9fughhyDH98wh2CnM4/l7oVcjCfT3T50qj4X9+rya6z71VDwF+lvfWswDCM974QUhlGtoO85/CIuwHjCMPGpcIoHaIBBOnPn3v4+Ms2uDHVvhHwEKdP9Y1nBJd98dl8aFM5tmXFpLP6qNACazWrv27LPl8VZ7+0EHVfKu+eie8gce0J5yJYMeM/SUT7CWmlSRAXu1/YLorxDo6vJnaLsxW7bIgzLHGfmZQVCGkMV5BKGL9cgXVFpocjjX7ejQMTjLl8sDi0yBDj9xniMNyt/McuFPoTRzPy6TQJwJhBNnxieujvOxqGffKNDr+egX3fY77ig6a8AZMeQIAVXA1bF4EiiKwMDAxIkSQK9efe65MierTPqU73vGhQr1vDvvlPIye8qxH3rE0VMOgY7zgj3lIMW0GgmIQK/k/EGbPU+HtqvIxdpUCkGLNKzzZmho7Fh5cIDPq6U8GvlXQ8OSJfLu+eDgwIBcDzINDxTgPwR7Zr5Cy/LQT/719zc0yMic3t6JE4V/V9fMmdLD39Exa5aMAGprmz1bvjqxdevb397RYUxn56RJsr7Hmlz3xGQ/sdRynzVph1hqqD6EfSH/uJ0EwiCA+yfizGDrjE9cHWw7WXq5BBLl7sj96oOA3vCl90Hs+ee11QceGHXrMbvmC9ai9ob11yuBvr6ZMyWgXbv2rLOkx7zSd8xdd+FCCZQTid//PltAjkAcQ9cxpB2Ber0eB7a7NggMD+vnBqVnuZih34Va7bpPPy3nUy7D+YS0XIGbq/xc67u69txTH0Dk/7xiIvHCC/JwYXBQ7r+p0uSddVlKJDwv8WYUB/8ll+RD2tm5777Csa3tfe8T4Zz6bJ0+IJARPyrOx4zR8nM9ykjVne0vx9myRda77pIlUp7rLl4s5cmypJ7X0iIlw088YGy0JnNpiKVe1QnrOGRrC9fVLwHElcESWLQIcXWw9bD0aidAgV7tRzBU/2+/XauLXqCfbM0YCvRQfwCs7H8JdHdrgL1u3Zlnyjvm0iOWTwgUAuc4//iHBLKJxG9/K4I/09Cz12TNGKQU5pmkuFzNBHp6dt1VhCteFSm/LSJHZWi7CsRc5aDHDOdRWMKwu7u4BxBDQwMDKqAnTZI29PfPnSuCfGjoqKNE2vf3b9sm23t61q+Xnu1kct067dGeOVMmnxsY+Jd/UeGdi4A/64eHp0yRkgYHjzxSe/yPPDK9ZM+bP18eOA4O3nWXPDDotSY982Lit5gxeEUH17f0Mvg3CQRNAHFlsPUgjg62FpZe/QQo0Kv/GIbYAlxYfvzjECvNWtWR1lI39n5rWbNyJQn4RqC9/cAD5Z3yjRvnzm1rk54q/UxSuRU4zubNEkAnkxdfLAG144z82BIEA3rKMaQdgqLcerkfCcSRgMza7sfQdtd99lkRro6T7XFXqicXPbp4ABYWk0LvnsOPrq4vfUkf/PX1iTA3ZswYbJMUwri3d8oUHZr+trelb4/L34ODJ57oedJD/j//I0LdceSxZqqnH/fvTmvSSjHpgReLSyvoR60SwAMixJXBthNxdLC1sPTqJ8BLX/Ufw1BaoELh5Ze1shdfDKXSIirZ31oRGZmFBCogsH37oYdKz9SGDaedJqFlpcJc3s4UdxKJn/5UAmvHEbmfMghzBKoTraWGgKZy8i8SqB0ClX9WTeV9InHLLdmlubLCeYUh1jjfgiKJrzps3XrUUdLT3dc3fXo+/1J+QJ6OFOap7dXyl/o/NHTEEWhRuucYkj9gLdXDnp6Hf5NAUATCiSPlU4liy5YF1Q6WW1sE2INeW8czpNbMn68Vvf3tIVWYs5rPWTPmq9ZyZuOGDAK9vTvvLH21HR377SdDDj2vu1veEfS8bdukp8N19RN7Q0MtLTqpT2urBJTaC5ISiujhQI8ulvVGJMJTLKPyKlqEMN+48VOfUgldaWtk6iTpMf+//1f4u+6qVelDUMELwgHCHD19VYSOrpJA0QQGB5uadKj2LruMHENSdBE2o+f98Y/aQ7txY7Y98a4zBDquWzjvsu2TbR0e0OE75njFBe0YHNR3uwcGmprEn46OAw+U6+zg4NSp2iOerdTaX+c4K1emX+8yW4zjgOOSuZ3LJBAEAcSRQZSdKhNxc2oN/yKBfAQo0PPR4bYcBH7/e91w0UWaVipaclRTxOoDrKXeXdturYgd6yTLwMCECRIQtrcffLD02UJwYnKz4jFoWOl5Dz0kfyWTv/udBsISUqVKgZDErOJIUzmq4y9w8kuYO87q1RKYJhI//7kK8/Xr00kgIIVwwLuYGHqXnpd/k0CtEUhdj9KvJsW30nE2bJDzy/PuukuuS5mGB4c4vyDUsT4zf+YyvtIgglz66LdsOfZY7QnfccfiesIzS6y3Zb1/OM6KFdkEeqYw53Wv3n4f0bQX91nEkcF4gV884uZgamGptUeAAr32jmmgLdIbqfT6iS1cqJW95z2BVlpE4R+0ZswfrBWxQ41lQY9OR8f++0tPDQRm6nvC2QYWlgJB9x8cPPZY+ct177tPAmHXXbNGQy8tC+8S4jM7CIgh3EupMdy8Kgy2bDnmGJm0qLX1Ax+QVMYAVOKH6/7978InkbjiCgnkHUeOTsoQiGJSJDzQgGBP5eRfJFC7BCqdFC6RuPZaPb+y979DkON6hPMLs8b39e24o+yJHnEI8Z6eWbNk/cDA5MnZhH/tHRHMACBzqvtnrvv443IddByZwWO04Xjg+ECwj87JNSTgHwHEjf6VmK2khQsRN2fbynUkkIsABXouMlxfBIEbb9RM0Qv0z1sz5lZrqclnimhEVWfp7586VQLHtWu/8AX50A2Wg2sUhPqpp+pQ+IsvTu9B0gc34odY6nu4mNwsboEXvke8YcMpp8i75Z2dOuS/fH4axicSN94oXDzvz39Of4CB9kMwQJBjErhie/TK9497kkD8COBzX6V65jjyCVB5UPj88+inSi8D5xNeGUkmGxpktvDNm084QR7AtbW9613y0snwcENDtv3Ty6qOv/UVGvlwmfqrU8ulfNfHjomEzifjukuXKj+kmzZJ3u7uX/9arvTDw83NqX1L/8tx1q2T8hOJq65Kv0+gJBwfCHM8qMR2piQQBAHchxE3BlFHqkzEyak1/IsEiiFAgV4MJebJQeDmm3XDpZdqOnZsjoyBr4bA2ceaMcusBV5tZBVgSOiaNSrMBwd1KHtYDg0NHXqoBHBDQ/vsI33MrvvKK+kB7qA1+fyPWGpWXgjTsPzMVU9vrw5NXb/+zDPlbfvKH2xs2ybtTyYvvVQCUdd9+eV0HughglCAMAcPBKq5/OV6EqhlAvg6QqltdN1ly9IfgGXuj/NqeLipSbatX/+5z8mDuO7u/ffP3teeWUI8lh1n0ya5nuC74kghtB1n/Hi5HieT27aJJJeHEPql9D32kPWJxOCgPFCVz7Dpg1XHUQEuj1TlOi4m5Tc3y/q2tieflOt2W9sxx+h0lqVy0JFCicQvfiHXw8yecwgkCHNcD3GdLLU25ieBUgggTkTcWMq+xefFmYM4ufg9mZMEhAAFOn8HZRHQG2xbm/aY3nmnFnLqqWUV5uNOmOzj29Z8LDgmRcl3giWwXLv2rLNEWA4N6eRKUbk3NKTfvRWBnm0IKGblRYoh3QjQwvZ7+/ZDDpHb5qZNc+Zs3155z5nj6IMJTPrmODq5HtqHof0IBMZZk4BZTAJXsbApsD4SiAeBgYFJk+S6Ue7IlaGhAw8UQdnX95OfSGrMuHHyPwR5b29Tk5xfnZ0NDQiXZXv8TB8XuO4TT6hQXrxY0yVLJPW8zZulfbh+4sEelpPJzk4R5K7b2Cj58GBC3s2X9qeuM9qznlpWEhj5BC6eNzRUyQOMROKaa/RBpc69gXKRwn9cD9EObGdKAkESQJwYZB3G3HGHnmcjv9ASbJ0svZYIUKDX0tGMrC3XXadVRy/Q32lNwjQxCczEIgPjW8X4bu66ddrjOzzc2JjeQ+tbRSUXtHlzvl0yA8F8eYPYhs8btbSccEJ7u/QIHXEEBoFWUp/n3XuvCAvPu+EGSR1HH0+gvQhAMWQTAh3CvJK6uS8J1AqBRKKtTXp0HaevT4RkqUPNh4d32qm6H3DpO9nJ5MUXiyB23cWL06/rENq4fiDF9QXbcd1BWurvA/v190+ZIleyrVvf975y7puu+9BDel189FF5sABD+RDiuD9jRBG2Iz9TEgiCAH53iBODqCNVJuLi1Br+RQKlELDPnEvZgXlJYDSBhx/WdStXjt4WzZpjrEVTt5+1dnfvuadM27Nu3ec/L32z8RHm2kq8Y5irzQi8wh66iFmX16w55xx5N79yYY4hm7/6lfQMJRLXXZcuzNE+BNB45x4CncI81y+E6+uZwOBgc7MKOe3/rh8WKn+TyR/9KJswx3UTQ8BxHcEyrieZAr1Sfi0tH/+4jixKJtMfFBQq1/N00tBEQr/ugfzwDw8UMJQd10lsR36mJBAkgXDiQsTBjzwSZFtYdu0ToECv/WMcaAs1kMCt/JprAq2shMLPsZYa6lfCrrHK2tJy/PHS84tZ2mPl3JvOFBLoCMAgYBF4BtUOPNBYterrX29tlXfgd9utkqGa+HxTMvm970k5nrdgQXrPEAJlBNAIQBFIo91BtZflkkA1E9i27d3v1knaEgncRaqjPXisoLOTJ5Pf/74K7WeeSb8+5GqL561aJds879VXs+XBdRI9zkhxPc22TyXr8IoB0sJlZT6wvPbabA8scR3EA0sIc14XCxNmDv8I4LxBXOhfydlKuvrqkXFxtjxcRwKFCXCIe2FGzFE0gd/9TrNecIGmOk1N0bv7mBGC6SBrxjxrzccKAi6qs3P2bAmBent32aUSgRmcmxqGQsDmqgc3RqS58lW6HkMyN2/+8IflgYY8mqmkTNfVQDuR+M1vdJIjHRiPwBk9Qgg4EYgikEa+SnzgviRQqwSGh7WHtq1NBXr826nnv+c98ogO4b73XrkCuq6+4oMHdZ537bUyt0RHx+67y/bBwalTsz14SCT6+nRov+PI9SXzHXBcLyFksew3Jzz4bWn52Mek57yQue769ZInkfj5z+W+5Dj6jjmud+CA6yGuj7heBtWOQn5ze30TQByIuDAYGojUEAcHUwtLrR8CFOj1c6wDbaneoDds0EDjrru0spNOCrTSIgr/pjVjTrFWxA4xybJly7HH6gdxYuJQhhuOs3atBJ4aXmZsfHMRgVhQgnVoSN/B37jxU5+SKVg6Ot7+9uxf2B3tW/Y1+sDB8/7wBw3A77hDe4Q0N9qDdyYReCIQRSCNQDV7HVxLAvVJYGBg/Hg5w7ZvP/xwkbptbe98p0zaNjg4bpyeefHi4jgtLXJ987y//EWvB488Isuu29sr77yLENWZ0puaJMV1wfPGj1eBnkhA8GYT6I2Nzz8vAh0hfWbrIXSDuq4MDeln5davP+MMmdW+0Fcsksmnn5Z2e97ll8srV8PDXV16/ZcrnnzUTcyYzOtiUNf/TF5cJoF8BBAH5stT+bY779T7/8aNlZfFEkjgzfsMIZCA/wSuuELLjF6gv8WaMXtYM+Y1a/632K8Su7r23lsCoEqHZvvlT65yPO+WWyRwzTQIVARsCFyxPjN/qct9fdOnS4+TfB5NAkssl1pOKr8+BkkmL7tMgmXXfeGF9IAaATKEOAJQtAvbU+XxLxIgAbxqgiHsHR37768P0ESWxs8cZ/lyOe8975575LqWSDz9tCzrjOgpQd7QMG6cCFFc3yBAcR3YvPmTn5QryuDgxInZHjw4Tn+/Ct0nn5Ty+/rkkXaKB66TKBdCHetTOcv7a3BQv/qxbp1+BQRfBRldml7dx4z5wx/EX2PuukuFufqL9oIDrou4TmK7X36P9o9rSKAwAcR9iAML71FJjiuvrGRv7ksCmQQo0DOJcLkiAnpD/utf5TY+PLxkiRb2trdVVKgPO3/VmjFft+ZDgQEVEfeec9fV2Xk976mn0gNQ9DAjsETAhgCuUlwdHQccIAH+hg0nnyw95pVPlrd9uwTGyeQFF4jgd10dEQA/EWCiHRgah/agvcjPlATqkcDQ0Jgxch5t337oodIj3tb2rndJD3lf34wZcl7Fz/Sq5bpPPil/QZB73ooV4ivO+2SyoUF7yOWKlluQZ14HPG/79nwv1zQ1LV4sAt9xurvTr5/glKpf680sH/lKTTFp5tq1X/iCTDaa6/i4blubCPIxY379a6ljaOill9KFOR4YQIjj+ojrIvwv1T/mJ4EgCCDuC6LsVJmLFyPuTa3jXyRQOQEK9MoZsoScBH75S90U/eRxh1gzZqo1Y1qt5XQ89A3oceru3mMPCYjiYzpQM5G49loJuD3v739PDywRsKFHGQEblssNMIeHNcxtbf3IR+Sd8q1b3/vecj77M5qjvkuaTP7Xf2UT5vAXASiF+WiCXFO/BHp7d9pJRppIz7gI8vb2gw+WtNTPo4VHcNs2eYCAyR3l84hy/UoktmyRK4xcv0QwJxJNTTI0HQ8YIThxfYPwLNQjPGnS4483Ncn16uij9Xql/c9ob3PzM880NhozMOA42V7JQf2oF9cj7F9q2te3ww5ynYMwHxiYPDnbyKeGhuXLZWxDQ8Nll8n2gYHNm9OH34MHru+4PsLfSv0stV3MTwL5CCDOQ9yXL2/l2y67rPIyWAIJjCZAgT6aCdf4RuDGG7Woiy7SdNo034ous6AzrRnzC2tlFhLAbq2txx0Xp3fOXVeFOIS546hQRyCGwAyBGlKsR75SUWEW4dbW979fePT27rxzeqBYanmp/DrrcDJ50UU6lP2NN9KHliIARzvwvVQEpuW2J1U//yKB6iGAycPa23XkCiZzi/urN47z+us6MuYXv5Dz3HE2bUqnjuvTmDFNTWPGpN4dhyDGdQDneyFBjrIx6d369Z/+tLx6IzVjm6Su29kpDwQaG5csESHc0zPwpqUmh0M98AMp1qeXVczfPT06uSiGsme+64+h9k1NjzwiDyZcd/584TU01N8vDzDACX7guogHr1hfrn/FtIF5SKBcAojzyt2/uP10gkhjEOcWtxdzkUCxBCjQiyXFfCUR0Bt3T48d6T581VW68/e+V1IhAWT+mDVjfmvNmG5rAVRUZJHd3bNmSY95d/dee0Xbc97WJoFtIjFvnvSgeJ4OAUUA5nmJhASWCNDQkwIBi4CtyGb/Mxtmq08Jcn9nrcdkdonEpZdqj/mqVenCHH6jPegxR4CKQP2fDvMPEqhBApgkDEPU29re8Q7pGR8aiuckbpmHwHUXL5bzuqHhF7+Q65fr9vTI9cp1k0kRxhDeEJpIcZ7jOpdZbvHLQ0MqyUcKc+w/YcJzz8kDAcdBPt2CenEdRVrpdWft2rPPlqHssPHjn3lm7FhjmpsXL5Ye/GRy8WLh0tHR2qqf8XQcEeqZIwlwfUQKjiiXKQnEiQDu34jzgvXtqqsQ5wZbD0uvVwIU6PV65ENt9+WXa3Xf/KamEiJEa5+2ZszV1qLzpbPzbW/Tvt3KfHDdRx6Rno+hoQMP1BBxypTsoeLIejxv4UIV5jqEXQatyjICRASwELAIbBGwId/IUnMvYchlS8vHPy6BYVfXPvv40f7MGl33b3/Toazz5okwdxytJTMgRruQol3Il1kul0mgFghgsrCNG+fOlTkd8KAss+c3+rbK2Ste6YgX112+XM5r133lFb1uvfqqCM2Ghu3bRWCKgNQh683NKjjljE4JdJzfEJp+neeOowPHZ878f/9v0iRjVq36+tdbW+Vd7tWr5R32adP+/Ofx4+X67HniP643qB8PPpFifbn8d9rp+uvFj7Fj33hDeEjN6WUNWjMGggY8cD3PTNP35d8kEFcCp1sL2jtELIhrg66P5dcrgRHDsOoVAtsdPAHtSce76GedFXyNxdXwQWsiFMWK28fPXJs2nXiiDB7HENJSy8bsww0N3/++DFEcHpZ+IwnH3v1uCVwHB08/XQLU4eHJk2W957W1yfpJk26+WXp0jHnySQmBe63Jshp6chBIInBEIId8hVJ8Dm3LFh3Cv3XrkUcqZ8+TANs/0zc6E4nf/U7a43kq0FE+/Ea7MIS93HahXKYkUE0EIMzXrv3iF7dskfP+LW9RCRyvVrjuggUjH7DpVQPCFecxHhgizRSWyJ+ZBt1azI7e2LhunVx/5XOU6Q9MZYC7cEca1IODQu3U+7L4J1YoN7eTQDwJ4EHTfdaC9vGaa/R8+cIXgq6J5dc3gTdvHTQSCIvAxRdrTZ/7nKYiFaO1z1kz5jfWwvcFArbcmhOJm29OD7DRk+N5jz2mAe5OOwllz9t5ZwkUp0+/++6JE2W5u1vW9/WNGydD6xEg6o0nNZQd6xH4FvZTw7z29oMOkiGyLS3HHy895YODEyaM7MMpXFIxOfDOaSJx2WXCwXXXrRPhj3bAfwTwuJFjZEDx7SrGG+YhgWgJ4F3otrbDDpPzD0PX+/unTZPzA4Ics3pH62167SrA5RUb8ROTuiEHHrDhgRrOYyxjO/JHnY4Zs2qV9JznMlyX4DeuV7nyB7U+qnqDag/LrU8CiOOCbT0imEsuCbYelk4CSoDPTPlLCJWAPrG/7TatdM6cUCvPU9lHrMkAb7E8GX3etG7dZz8r7wqWOtTdcRYvlttFQ8OPfpQu0OEeAr/x4ydNkqGV48aNGTNunAS+YsiVmqRoyFpK2JYqXCXwlx78TZt06HpPz+67B/NOvcgOeaBwyy0qyHVWZsfR/ni0Dz1suQJ5Bqap3wD/qh0CfX0zZ8p5sXLlN7+JKYzi3DrHeflluY4lk7/+tfjtOOo1zk8IWYzkwfmMB2zIF+c20jcSIIFgCIy3ZsyfrQVTR6rU227T681JJ6XW8S8SCI5A5D2YwTWNJceXwIUXxs23s6yF71W5nydKJG69Vd96zO4zAtiGBn0nM5fgRoALYZsrX2YtGCq7adOcOTJEf9Wqr31N3rkMSpi77hNP6AOJr39dhL/n/eUvsiyjAKTPHoK82ZoM4RdLveuJQB/tzWwPl0mgFgjgvIxvW/SxnefNny/Xr4aGH/xAH7S1tsp5jPMUI14mWDMGgTjOc57H8T3C9IwEwiIQbtyGrxGF1TrWU+8EOMS93n8BIbdfA6vnntOe9Lvu0uo//vGQ3RhV3SesGXOtNXknXGxUNt9XlD/EPZ88T/WE+x3IDgzoUPXVq887TwT5wMCkSfk9KQ+Z42zcqJNA6Tvlrvv88+nvrOOBAgJ5vFOOAL7YBw3lece9SCCeBDI/pxW9lyrI5SsKMsLGdV94QV9BEVmeuk7hPMYDNjxgxHnu93Usei70gARIoFwCE60Zg7it3HKK2++uuxC3FpefuUjAHwLsQfeHI0spi8AFF+hu6dKrrIJ82+kca74VV7CgcgX68PCsWfkm9cGQdaSYDKigQzky4N3Wdes+9zkZku+/MNeA3fNuv10EfzL5jW9oQK/CHAE6AnncoNFTjndRKcxzHECurgsC0oMej6upjG+RHnEV5p737LP5hDl6yHF+oycd531dHDw2kgRIoCgC4cRpuJIiTi3KNWYiAd8IUKD7hpIFlUJAA68XX9R9br21lH2DzPsha/JZHLEga9KyyxXog4NHHCHDu4eHZeq30YbZgfusyazuYqPzjV6jsr+nR79Hju+TYwh7b+/OO4tw9sscZ+lS8SuZ/OY3pVx5t1wEuuNoLQjUEcBDkKPHnD1sfh0JllMLBJqblyyRj1h6XmenXB+iskTi6qvlkRuEeaYfeKCGHnMsU5BnkuIyCZAACCAuQ5yG9cGkt946Mk4NphaWSgK5CHCSuFxkuD4UAtqzO3u2VrZ4saZRhpbqwfPWjDnPWnAoXn31xz/etEkE9NixxQnokb647qJFsl8iccklEhDL53zSc0DgIhDGJEuuO3asUO7q2ntvGYTa2bnffvJ1T6SDg+PHl+NPet35/nac116T59PJ5H/+p0hxx9GhsNgHwht+Q5CjPcjHlARIYDSB7dsPPVSmU8R3zkfnCGaN5/3pT/KALZG48cZsr77gFRQ8cMPkbxz5EszxYKkkUEsEfmXNmAOtBdUyRD77768C/eWXg6qJ5ZJAPgJZe9/y7cBtJOAnAVwAVajPn69ln366n3WUUxZuAPtZM2aptXJKyr/P0FBDAwZS5c+ZfevQ0EEHidAeGDj/fOlLd92HH5bbi+Ns2iTl9vX19EigvHXrAQd0dBizZcuhh8oXw/v7Z8/W21D2HvjstVW+Vt5BlXoTiSuv1AcKFOaVU2UJJDCSwIQJzzwzdqx8leLgg+V8lwdx8gAuOJOpIqXH/Lbbsglz9IyjpxwphXlwR4Qlk0CtEEAchrgs2HbNn4+4NNh6WDoJ5CfAHvT8fLg1JAIq0PfaS6vDE8twxWO2prZaM2aOtVKGimcrbfS6lSu/9S35sFBf34wZI/u+R+etxjUQ5J6ns8677vLl6Q8k0FOOHnL08GOSKAT21dh2+kwCURPo758yRQQzPrtW7lcjCrUjkbj+erl+4esKmfkhyNFzjnfNKdAzSXGZBEgABHB9uN2aMVOtYavfKSKw2bM17lixwu8aWB4JlEIgwrfUSnGTeWudwMgL4g03xKW9uCF8wJr/Xk2e/Ne/yvfJ5W1y/0sPs0TtCXfdxx6THvJk8vvfl6HryeRPfqKB+z/+Id5AeGOStx2sGYPPKWEILIV5mMeOddUqgWRyyxbPM2bmzPnz5bODfl9nHKelRa5crvvAAzoiZyRJnMcQ6Di/EXiPzM0lEiABEkgRQNyFOCy1JYi/brhhZBwaRB0skwSKJ8Ae9OJZMWcIBLQnfdYsrWrZMk1l2qNoDZOs4YbRa80/n7ZvP+wwfWf0pJP082755mj3r95yS8I75J73yCPSQ+d5CxdKgO44XV3iOXrGEZCjZxzLCNCRlusH9yMBEiiewLZtRx7Z1WVMS8vHPqaD0ovfN1vOROLyy/UB3N/+lk2go6c8s+ccwj1bmVxHAiRQ3wTwQO9+a/IAUCwoJnj5Z5999Lq0cmVQNbFcEiiFQGA/+VKcYF4SAAG9QL7xhi5feinWR53iBhHU5z0mTHjqKXlndMaMW2+dOFFaG5cedXlzXQT3vfeKEE8mv/1t6RlvaPjOd7SH/KGHZHtj48CAPEZBzzieeE+2Zgwmg8Ikb+Ap+9JIgATCITBp0mOPNTUZg7T8WvX65LovvZRNmKNcPKhDivVMSYAESCAXAcRZ4cQJl15KYZ7rSHB9lATYgx4lfdadk4D2pI8frxmWL9d05sycO4S84SRrMkuymP+VR92jjs+fNTRceKH0kMlnz9L79BFwo2ccs63jhooeMqT+E2KJJEAC5RPQs3ndujPO2LZNvt6w//4ymVyp5nkPPCAP7hKJefMkzTS80oIedFwvcJ3IzM9lEiCB+iUww5oxt1oLmsOGDVrD3ntrnNLeHnSNLJ8ESiHAHvRSaDFvaARGXjC/+93QKi6yop9aE+EqVuROJWQLvkddw2nXXbBAesBc969/1VTfIR8z5uc/lz6yxkbHkZ5xTOKGFIIcaWbPeFBcSkDIrCRAAjkJaA/4jjvedJOM2BkzZtWqZDJn5pwbBgePPlrecR8enjEjW6YBa8bglaB+a5JfLNseXEcCJFBvBBAvIK4Kp/3f/a7WS2EeDm/WUioBCvRSiTF/BASuv14rffbZCCrPWuWe1oz5oLWsWXxZmRLqt9wigXQisXWrBMSlG4akPv64CPGGhm98Q4eo/+pX0kPe2HjVVbK+ufnqq6X88eM9r7lZhsKKpSZxw2RuEOoQ5qX7wz1IgASiJoCRMTvtdO21kyfLKyw6qVzxfumXNvr7zz9fBP7Q0E47pT+whBDvsSafexOTr1aI+f9VjOL9Zk4SIIG4EEAchbgqWL8QRyKuDLY2lk4C5RIIoO+vXFe4HwnkJqCB3hFHaI4FC3LnjGbLR6zJd4fFgvehr2/6dBHWnZ2zZ8sUJ52d++wjaU/PHnuI8B4eTiS0B3zpUgmhm5puv117ulaskP0GraUmX8HkbZjUCUNTMRQVT7iDbxlrIAESiIoAriurV3/lK1u2iIBuapIHd8WbTHUpQl8nj3Pdp55K3x+vxuA6g7kpMCkUthdfH3OSAAlUKwG8+vJna2G14j3v0Xhm4cKwamQ9JFAOAQr0cqhxn8gIqFD//e/VgblzI3Mko+JnrRnzdWsZG0NcHBpqaBBhLt8/FiGeTK5bJ8Ics9BnphDeCIyRYn2IrrMqEiCBmBDo65s5U64f7e0HHijvpnd17bmn9Hj39u6yS/oDwELuJpN/+pNcjxKJm2+Wl2qGhwcHZRnXFzwYxLvpEOy4DhUqn9tJgASql8Cl1ow5xFrQ7bj5Zr3unHJK0DWxfBLwgwAFuh8UWUZoBFSg77qrVojPsMn85/Gwb1kz5klr8fApmxcYeoptCJixzJQESIAEMgkMDyeTIrC7u3fbTQQ7hHt3twr4np5ddxUBL5I8fd+mpjvvlDUNDXfdJftjBA+uO+hBx6szGMGTXgb/JgESqA0Ch1sz5hJrQbdJR/UYs+++er1ZtSroGlk+CfhBgALdD4osI3QCKjAvuEAr/sEPQncgR4V4txJD3jE5Uo7sXE0CJEACNUMAAr6rSwW857W1yTvpnrdunaSZI3iwjB5zCHMs1wwYNoQESODNuW7EjMGQdoygCRbND36gwvyHPwy2HpZOAv4S4CRx/vJkaaESuOgire7ll0OtNk9luOF801qejNxEAiRAAjVGAJPOjRu3YoUE4mPGtLQ0NMirNmIyGaUG6HwHvcYOPJtDAkUQQFyEOKmIXSrIgrgQcWIFRXFXEoiAAAV6BNBZZeUE9ImoDLIUO/tsTWXwZDzsA9bCercqHm2mFyRAAiRQDAEMbecklMXQYh4SqG4CeMcccVGwrUEcePbZI+PEYGtl6STgNwEOcfebKMuLhIAOeb/8cq38nHMicSJLpfgO8PHWUp8ZypKVq0iABEiABEiABEigJghg8sd7rMnMFGJBN+23v1Vhfu65QdfE8kkgSALsQQ+SLssOmcB3vqMVrlkTcsU5q8MN6WfWUrMX59yBG0iABEiABEiABEigSglghAziHsRBwTYHcR/iwGBrY+kkEDQBCvSgCbP8UAjoDQFfII9PDzoaf4A1Yz5qDWuZkgAJkAAJkAAJkEDtEECcg7gnnJadc87IODCcWlkLCQRFgEPcgyLLciMloEPeb7lFnTj55EidyVL5SdaM2WgtSwauIgESIAESIAESIIEqITDDmjG3WgvL6T/8QYX5pz4VVo2shwTCIECBHgZl1hE6ARXoM2ZoxUuXajplSuiO5KgQwnyutdR3gXNk52oSIAESIAESIAESiB0BfBbxZmvGQKgH6+iWLVr+fvupQN+4Mdj6WDoJhEuAQ9zD5c3aQiIw8oJ93nkhVVt0NbiBfcVa0bsxIwmQAAmQAAmQAAnEhgDiGMQ14Th23nkj47xwamUtJBAWAQr0sEiznkgI6AX8ppu08vnzI3EiT6VzrBnzbmt5MnITCZAACZAACZAACcSEAOIWxDHhuDV//si4LpxaWQsJhE2AQ9zDJs76IiGgQ94nTtTKX3hB0912i8SZPJV+0poxm6zlychNJEACJEACJEACJBAygenWjLnNWliVr1ypNR1wgAr0trawamY9JBAFAfagR0GddYZOYOQF/fTT1YHBwdAdKVDh1daMSVorkJmbSYAESIAESIAESCAEAohLEKeEUOWbVSBOO/30kXFcOLWzFhKIigAFelTkWW8kBPQCv2CBVn7RRZE4kafSKdaMudAav5ueBxU3kQAJkAAJkAAJBExA46ZUXII4JeBq/7f4iy4aGbeFUytrIYGoCVCgR30EWH+EBH74Q638qacidCJr1YdbM+YUa1mzcCUJkAAJkAAJkAAJBEoAcQjikkAr+2fhiMsQp/1zA/8ggbogwHfQ6+Iws5G5COi76XvtpdsXLdK0uTlX/qjWf8maMUutReUF6yUBEiABEiABEqgHAvtZM+ZKa2G1uKNDazroIO05X7EirJpZDwnEiQAFepyOBn2JjIAK9TPPVAeuuy4yR3JUPGDNmBOtGbPNWo7MXE0CJEACJEACJEACZRCYZM2YO6wZk7BWRkFl7fLZz6owv/76snbnTiRQIwQ4xL1GDiSbURmBkTeEefMqK83/vXGDvN6aMY3W/K+HJZIACZAACZAACdQfAcQViDMQd4RDYt68kXFYOLWyFhKIKwEK9LgeGfoVIYGvfEUrf+aZCJ3IWjUmZ7ncmjGutaxZuZIESIAESIAESIAE8hJAHIG4AnFG3p1824g4C3GXbwWzIBKoagIU6FV9+Oi83wT0CW5vr5Y7Z46mmzf7XU+l5e1tzZgfWONs75Xy5P4kQAIkQAIkUE8ENN5JxRGIK8JhgLhqzpyRcVc4tbMWEog7AQr0uB8h+hcJAb1hrFqllc+dqym+xxmJS1krfZ81Yz5vLWsWriQBEiABEiABEiCBEQQQNyCOGLExsAXEUXPnjoyzAquQBZNAVRKgQK/Kw0anwyKgN5CHH9b6vve9sOottZ7PWDPmOGul7s38JEACJEACJEAC9UAAcQLihnDb/L3vjYyrwq2dtZFAtRDgLO7VcqToZywI6Gzvt9+uzpx4YiycyuLEl60Zs8RalgxcRQIkQAIkQAIkUDcE3mbNmCushd3sO+5QYY5XB8Oun/WRQHURoECvruNFbyMmoAJ9/Hh146mnNN1334jdyln9GdaMed1azmzcQAIkQAIkQAIkUIMEdrdmzH9bC7uBy5ZpjYcdpgK9vT1sD1gfCVQjAQr0ajxq9DlyAirU99xTHXniCU2nTYvcsQwHhqwZc6o1Y9ZZy8jERRIgARIgARIggZoisJM1Y+ZbC/urL5gE7p3vVGH+6qs1BZeNIYGACfAd9IABs/jaJDDyhnPCCdrKnp64tRafT7nRmjE7WIubl/SHBEiABEiABEjADwK4z+O+jzjAj7ILl4E46IQTRsZJhfdkDhIggRQBCvQUC/5FAiUT0BvQ44/rjp/+tKbDwyUXFPAOCWvG4IY9yVrAlbJ4EiABEiABEiCBUAjgvo77PO77oVRuEPd8+tMj46JwamctJFBrBCjQa+2Isj2RENAb0m23aeXnnx+JE0VUOtZaSqg3WytiR2YhARIgARIgARKIHQHcxyHMcZ8P19Hzzx8ZB4VbO2sjgVojwHfQa+2Isj2xIKDvqF9xhTrzpS/FwqksTrRaS72j3m0tS0auIgESIAESIAESiA2BJmvG3GTNmKnWwnbvyitVmH/5y2HXzPpIoJYJUKDX8tFl2yIjoALd89SBu+/W9EMfisyhAhVvsWbM6daM6bBWYCduJgESIAESIAESCJVAZo/5FGuhuvBmZffeqzV+9KMq0AcHw/aA9ZFALROgQK/lo8u2RU5AhXpzszry6KOaHnRQ5I7lcGC7tZRQ32YtR2auJgESIAESIAESCIVA5jvmE6yFUnVaJYsW6cJRR6kw7+hI28g/SYAEfCJAge4TSBZDAvkIqFDfYQfNA6Ee3++nY6j7adaM2WwtXwu5jQRIgARIgARIwG8C06ylhrJH8445vmcOYd7S4nc7WR4JkECKACeJS7HgXyQQGAF90owb2rHHakWvvx5YhRUWjADgZmvGzLRWYaHcnQRIgARIgARIoCgCuO/iPoz7clE7+5YJccqxx46MY3yrgAWRAAlkIUCBngUKV5FAUAT0Brd2rZZ/zDGaYjmoWssvt8GaMQgQdrVWfnnckwRIgARIgARIIDcB3Gdx38V9OPceQWxBXHLMMSPjliDqYpkkQAKZBCjQM4lwmQRCIKA3PDyZhlDftCmEqsuqwrVmzA3WjNnXWllFcScSIAESIAESIIEMAriv4j6L+25GtoAXEYdAmCNOCbhaFk8CJDCCAAX6CBxcIIFwCahQf+UVrfW44zTdujVcL4qvDQHD1daMOdpa8fszJwmQAAmQAAmQQIoA7qO4r+I+m8oRxl+IO447bmRcEkbdrIMESCCTACeJyyTCZRKIkIBOJnfYYerCQw9pOn58hC4VVfU8a6ke9qJ2YiYSIAESIAESqFMCn7FmzFnWooLQ3q414x3zp56KyhPWSwIkkCJAgZ5iwb9IIDYEVKgfeaQ69Oc/axp/of6ANWMutGbMkLXYYKUjJEACJEACJBAJAfSMf9eaMe+3Fokrb1YKYf6Rj2iP+WOPReUJ6yUBEhhNgAJ9NBOuIYHYEBjZo37fferY5MmxcTCHIy9ZM+Zr1ozpt5YjM1eTAAmQAAmQQI0SSFoz5pfWjPkXa1E1FkPZP/hBFebsMY/qSLBeEshHgAI9Hx1uI4GYEFCh/va3qzsPPqjp9OkxcS+nGxutGfM5a/LMXixndm4gARIgARIggZogMN6aMddaM2aGtaiahsnf8I75iy9G5QnrJQESKEyAk8QVZsQcJBA5AX3SjRvqUUepQ2vWRO5YAQcQkNxpzZi9rBXYiZtJgARIgARIoEoJ4D6H+x7ug9E0B59LO+qokXFENN6wVhIggeIIUKAXx4m5SCAWBPQGi1nfIdRfey0WzuVxAt9xRU/Cx63l2YGbSIAESIAESKCKCOC+hvsc7nvRNAGfRzvyyJFxQzTesFYSIIHSCHCIe2m8mJsEYkVAh76/5S3qFGZ933ffWDmZx5n/sWbMD60ZM2gtzw7cRAIkQAIkQAIxIOBZM+YCa8a8z1rUji1bph5gVnb0oEftF+snARIohQAFeim0mJcEYkpAhfoOO6h799+v6UEHxdTdUW6tt2bMF60Zs83aqGxcQQIkQAIkQAKREphkzZirrBmzo7VIXXqz8kWL1IMPfEB7zFtaovaI9ZMACZRPgEPcy2fHPUkgNgRG3pAx9P0vf4mNgwUcQYBzlzVjDrBWYCduJgESIAESIIGQCOC+hPsU7lshVZ+jmnvv1Q14x5zCPAcoriaBqiLAHvSqOlx0lgSKI6A96p6nuX/zG02/9KXi9o5PrhuspWbB5XfV43Ns6AkJkAAJ1DIBfLccXyH5jLW4tPjKK9WTr3xFH9APDsbFM/pBAiRQOQEK9MoZsgQSiD0BFezf/KY6evHFmjpVc/6/Yc2Yf7NmzFZrscdOB0mABEiABKqMwGRrxlxmzZhZ1qJuxPCwenD++SrIL7kkao9YPwmQQHAEOMQ9OLYsmQRiQ0Bv6D//uTp08sma9vTExsECjiBA+qM1Y462VmAnbiYBEiABEiCBIgngvoL7DO47Re4eUDbcp08+mcI8IMQslgRiSKBqetBiyI4ukUDVEtAe9Xe9Sxvwxz9qiknmqqdZC6wZ8wNrxvRZqx7/6SkJkAAJkEA0BPAZNNw/3mMtGl9G17p5s6474QQV5o8/PjoP15AACdQqAQr0Wj2ybBcJFEFAhfqee2rWe+7RtHo+04Ymdlkz5qvWjPmHNWxlSgIkQAIkQAJK4K3WjPm1NWOarMWFDj6TdvzxKsxffTUuntEPEiCB8AhQoIfHmjWRQGwJqFAfP14dvO46TefMia3DBRy71ZoxV1gzZsBagZ24mQRIgARIoOYIJKwZ82VrxpxkLW7NvOMO9ejMM1WYt7fHzUP6QwIkEB4BCvTwWLMmEqgaAirYv/1tdfjCCzXFrPBV0wyz3Zox37ZmzFJr1eM/PSUBEiABEiiPwH7WjLnYmjETrJVXlv97Ydb1731PBfnPfuZ/HSyRBEigWglQoFfrkaPfJBACARXqxxyjVd18s6bTpoVQdSBVPGzNmJ9aM6bXWiBVsVASIAESIIEQCTRaM+Y71ow5xlqIDhRVFd4tnztXhfnDDxe1GzORAAnUFQEK9Lo63GwsCZRHQIX6Lrvo3rffruk73lFeadHvhSHv37VmzBPWoveLHpAACZAACZRG4J3WjLnQmjEY0l5aKUHnfuYZrWHOHBXmq1YFXSPLJwESqF4CFOjVe+zoOQmETkCFemOjVvyb32h61lmhO+Jzhc9aM+YCa+afQ+N9robFkQAJkAAJVEgAQ9V/aM2YQ6xVWGhgu8+bp0V/5SsqzHt7A6uKBZMACdQMAQr0mjmUbAgJhE9ABfuZZ2rNv/61ps3N4Xvib43XWDPm99Y4yZy/dFkaCZAACRRPAD3ip1gz5mxrxe8fbs6ODq3vq19VQX799eHWz9pIgARqgQAFei0cRbaBBCImoEIdn2u76SZ15/DDI3ar4uq7raV61p+0Zoy2t+LiWQAJkAAJkEAGARW2xhxuzRj0lI+1lpE5NotPPaWunHaa+r9iRWxcoyMkQAJVR4ACveoOGR0mgfgSUOGaSKiHF1yg6b//u6bVNwt8JunXrBnzH9aMWW0tMxeXSYAESIAESiWwizVjfmzNmD2slVpKWPkxC/tFF2mNP/yhCvOBgbA8YD0kQAK1S4ACvXaPLVtGApETUMH+nveoIzfeqOluu0XumE8OPGDNmEutGdNpzafCWQwJkAAJ1DCBcdaM+bo1Y95vLe4NXrlSPTz9dBXkCxbE3WP6RwIkUH0EKNCr75jRYxKoOgIq1CdOVMd/+1tNTz216hpSwOHrrRkz35oxPdYK7MTNJEACJFAHBMZYM+ZUa8acaa1aGj5/vnp6zjkqzNvaqsVz+kkCJFB9BCjQq++Y0WMSqHoCKthPO00b8qtfaTplStU3LKMBV1kz5lZrxvRZy8jERRIgARKoQQIN1ow5yZoxX7RWLQ3dskU9Pe88FeSYW6Va/KefJEAC1UyAAr2ajx59J4EqJ6BCffp0bQaE+qc+VeXNGuX+kDVjfmPNmD9aM6bf2qjsXEECJEACVUcgac2Yj1kz5ivWjHGtVUtzbrlFPf23f1NhvnFjtXhOP0mABGqHAAV67RxLtoQEqp6ACvbjj9eGXHGFpjvvXPUNy2jAgDVjfmnNmL9Y4+fcMjBxkQRIIMYE8PmzD1sz5mvWjMH6GLue5tqaNbqAoet33522kX+SAAmQQCQEKNAjwc5KSYAE8hFQoT5+vObBLLnnnKPLTs1dt9DDju+v32nNmC5r+UhxGwmQAAmEQ6DJmjGfsJZ0WrOoAAAPvElEQVT6Hnl19ZAPDystPAD+zne0p7y9PRyKrIUESIAEChOouUC3cJOZgwRIoNoIqGB/97vV73nzNJ09u9raUaq/91gz5jprxrRYK7UU5icBEiCB0gnsYM2Yz1oz5nhrpZcTjz1efln9OPtsFeQLF8bDL3pBAiRAAqMJUKCPZsI1JEACMSWgQr2hQd37zndGpmPHxtRt39x6zpoxv7JmDL7L7lsFLIgESKBuCeC74+dZM+Zga9WKo7tbPf/ZzzS96CIV5n191doi+k0CJFA/BCjQ6+dYs6UkUHMEVLDvsos27OKLNZ07t+YamqNBa60Z82trxjxtjZPP5cDF1SRAAm8SwGRu77BmzFetGfMWa9WO6OabtQXnn6+CfNWqam8R/ScBEqg/AhTo9XfM2WISqFkCKtiPOEIb+MtfanrooTXb4BwNu92aMX+wZsx6azkyczUJkEBNE9jRmjEnWzNmjrVaafKzz2pLMOs6h67XypFlO0ignglQoNfz0WfbSaBGCahQx2RyZ5yhzcRkczNn1mizczYLAv0Ka8b83Rq/y54TGDeQQBUSwHfH323NmC9bMwYCvQqblMXlDRt05Xe/q+n112tPOSZ/y7ILV5EACZBAlRGgQK+yA0Z3SYAESieggr25WfdEYPeNb+hyY2PpJdbGHpiE7jZrxrxhzRjMKl8brWQrSKC2CGDW9FnWjPmktWqfxC3XMert1S2XXqrphReqIOes67mIcT0JkED1E6BAr/5jyBaQAAmUSEAF+2676W7/8R+aoqc9kSixuJrJDmEOwQ4Bv9KaMcqtZprLhpBArAmoEDVmN2spAQ5BDqEe60aU7NzAgO7y3/+t6Y9/rBxWriy5KO5AAiRAAlVKgAK9Sg8c3SYBEvCPgArPvfbSEv/zPzU97TRNXde/mqqzpD5rqXfa77VmzBprFO7VeVTpdVwIQIjvbM2YD1lLvTOOoetx8ddfP4aGtLybbtL0Rz9SHitW+FsPSyMBEiCB6iFAgV49x4qekgAJhERABfu++2p1P/iBpiefrCnebdelev6/x5oxd1gz5iFrxrxuzZhBa/VMiG0ngRQBz5oxu1sz5lhrxpxozZgx1lL5a/MvvCt+663avgsuUEG+bFlttpetIgESIIHSCVCgl86Me5AACdQZARXs//Iv2uwf/lDTT3yizjCU3NyF1oy525oxS6wZ02at5OK4AwlUBYGJ1ox5mzVjPmrNmCOsVUUTAnDyrru0UAjyF18MoBIWSQIkQAI1QYACvSYOIxtBAiQQJgEV7AcfrHX++79reuKJmnJIfKFj0WHNmD9ZM+ZRa6lJ6rqsFSqF20kgGgJN1ozBJG1HWTPmBGvGNFuLxrfoa8WQ9TvuUF8uukh7yJ97Lnrf6AEJkAAJVAcBCvTqOE70kgRIIMYEVLC/9a3q4re+pelnPqNp/c4SX+4hQw/7n60Z87i11ND5dmt8971cvtwvOwG8Cz7eWmoo+rusGfMRa8aghzx7KfW2FrOs33CDtvySS5TjP/5RbyTYXhIgARLwiwAFul8kWQ4JkAAJ/C8BFew77qiL556r6Re/qOm0af+bjUmZBDDbPIQ7euBfsWbMBmvGsCe+TMA1uht6vmdaM2Yfa8agBxxCvDZnR/froG7erCVddZWml1+ugnz9er9qYDkkQAIkUO8EKNDr/RfA9pMACQROQAX7mDFa0emna/pv/6bp/vsH7kCdVgAh/5Q1Y56xZgyE/DprxmyzZky/tTqFVYXNTlozZpI1Y3aylhLeh1oz5jBrxlB4l3OQFy/WvS67TNMbb1RB3tNTTmnchwRIgARIoDABCvTCjJiDBEiABAIhoML9fe/Twr/8ZU0x+VwyGUilLDQnAXxObrG11KR2r1ozZrU1Y7ZaMwbv0mM/PBDIWQE3jCAAwYzPiOHd7cnWjNnFmjF7WktNura/NWOw34hCuVAmgf5+3fHOOzW98koV4n/9a5kFcjcSIAESIIEyCVCglwmOu5EACZCA3wRUsM+YoeV+/vOann22prNmacr/40oAQ+oh6FdZM2a9NWM2WjOm1VpK4HdaM6bbmjG91lI9+hD++Gyd/k5S7+BjuVwuKsSMyUzxWTAIafRYN1ozZqw1Y8ZZS02ONtWaMTOsGbOjNWN2tZYS3BhyXq7f3K8SAm+8oXtfc42mv/udHv+NGysplfuSAAmQAAlUToACvXKGLIEESIAEAiGgwgvfXT/6aK3ks5/VFLPGjx0bSOUslARIoAYIdHdrIzCr+nXX6fIjj6ggx3fJa6CpbAIJkAAJ1AgBCvQaOZBsBgmQQP0QUOE+caK2+FOf0hTvtr/nPboMYV8/XNhSEqhfAhDaCxYog5tu0vTmm1WIt7XVLxu2nARIgASqiwAFenUdL3pLAiRAAjkJqHDfdVfNMHeupqeequkBB+TckRtIgASqjMCLL6rD8+dr+vvfqxBftarKGkJ3SYAESIAEMghQoGcA4SIJkAAJ1BoBFe777qvtmjNnZHrQQbXWXraHBGqHwKJF2pbbb0eqQnzZstppI1tCAiRAAiSQToACPZ0G/yYBEiCBOiKgwn333bXJeKf9ox/V5SOO0DSRqCMkbCoJhExgYEAr/PvfNf3TnzS9804V4q+9FrJDrI4ESIAESCBiAhToER8AVk8CJEACcSOgwn3yZPXrAx/QFML9/e/X5WnT4uY3/SGB+BJobVXf7r9f03vu0fS++1SIb90aX9/pGQmQAAmQQJgEKNDDpM26SIAESKCKCahwx+RzBx+sTTnuuJEpet4bG6u4qXSdBEok0NurOyxcqOmDD45MFy1SIT40VGLBzE4CJEACJFBnBCjQ6+yAs7kkQAIkEBQBFfD47Ns736n1HHWUpu99r6ZYj3xBecNyScBPAvhc2RNPaKmPPqrp3/6m6RNPqABHPj/rZlkkQAIkQAL1RIACvZ6ONttKAiRAAhESUAHf0KAuoAcegh3p4Yfr9lmzInSVVdcdgTfe0CY/+aSmEOJIn3tOBXhfX92hYYNJgARIgARCJUCBHipuVkYCJEACJFCIgAr5GTM03yGHaIrZ5jNTTHKHofeFSuf2+iCA74K//rq2F7OhZ6bPPqvCe+PG+uDCVpIACZAACcSdAAV63I8Q/SMBEiABEshKQIX8hAm6cfZsTd/2Nk33229kis/M4Tvxnqfb+X91EBgcVD/xnW98ZmzpUl2PdMkSXX75ZRXe27dXR/voJQmQAAmQAAkoAQp0/hJIgARIgATqgoAK+mRSG4ue9z331OW99tIUQ+t32UWXM9Mdd9T1rqsp/y+OACZHW79e869enT3FUPNXX9XtK1Zo+vrrKrj7+3WZ/5MACZAACZBAbRKgQK/N48pWkQAJkAAJ+ExABT6+C7/DDlo8huJPn559edIkXY8Un6/DMkYANDVpPqSYRA/LmBUf9WMEQGaqpRiDHufMFN/dxqzjXV26ByY3wzJS9EBv26b58DkwLCPdtEm3Y6h45nJLiwps1A8/mZIACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACZAACcSBwP8HiafBulDA+IAAAAAASUVORK5CYII='))
+v.present('popover', orientations=['portrait'])
