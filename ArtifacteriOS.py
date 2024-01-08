@@ -14,11 +14,11 @@ import itertools
 import json
 import os
 import ssl
+import io
 import urllib.request
 import urllib.parse
 from collections import Counter
 from decimal import Decimal, ROUND_HALF_UP
-from io import BytesIO
 from PIL import Image, ImageFont, ImageDraw, ImageEnhance
 from PIL import ImageFile
 from ArtifacterResource_Font import ArtifactFont
@@ -72,8 +72,8 @@ class Artifacter(object):
         self.characters_json = concurrent.futures.ThreadPoolExecutor().submit(self.character_json).result()  # キャラクターデータをEnka.Network公式Githubから取得
         self.costumes = concurrent.futures.ThreadPoolExecutor().submit(self.costume_json).result()
         try:
-            self.player_data = json.loads(urllib.request.urlopen(urllib.request.Request('https://enka.network/api/uid/{}'.format(self.UIDs.text()), headers={'User-Agent': UsrAgn})).read().decode(errors='ignore'))
-        except Exception:
+            self.player_data = json.loads(urllib.request.urlopen(urllib.request.Request('https://enka.network/api/uid/{}'.format(self.uid), headers={'User-Agent': UsrAgn})).read().decode(errors='ignore'))
+        except:
             self.player_data = {}
 
     def mainoption(self): # 聖遺物のメインオプション情報
@@ -1017,8 +1017,7 @@ class Artifacter(object):
         player_infomation = self.player_data['playerInfo']  # 取得したデータから「playerInfo」を取得
         if 'showAvatarInfoList' in player_infomation:  # 取得した「playerInfo」から「showAvatarInfoList」がある場合は以下を実行
             for avater in player_infomation['showAvatarInfoList']:  # 取得したプレイヤーデータからキャラクター名を日本語へ変換
-                avater['name'] = self.locale_jp[
-                    '{}'.format(self.characters_json['{}'.format(avater['avatarId'])]['NameTextMapHash'])]
+                avater['name'] = self.locale_jp['{}'.format(self.characters_json['{}'.format(avater['avatarId'])]['NameTextMapHash'])]
 
         return player_infomation
 
@@ -1035,16 +1034,6 @@ class Artifacter(object):
 
     def create_buildcard(self, avaterinfo, score_state):
         # ここからキャラクターデータ
-        if len('{}'.format(avaterinfo['skillDepotId'])) == 3:
-            character_id = '{}-{}'.format(avaterinfo['avatarId'], avaterinfo['skillDepotId'])
-            character_skill_icons = ['{}.png'.format(list(self.characters_json[character_id]['Skills'].values())[2]),
-                                     '{}.png'.format(list(self.characters_json[character_id]['Skills'].values())[0]),
-                                     '{}.png'.format(
-                                         list(self.characters_json[character_id]['Skills'].values())[1])]  # キャラクター天賦画像
-        else:
-            character_id = '{}'.format(avaterinfo['avatarId'])
-            character_skill_icons = ['{}.png'.format(skill) for skill in
-                                     self.characters_json[character_id]['Skills'].values()]  # キャラクター天賦画像
         try:
             if len('{}'.format(avaterinfo['skillDepotId'])) == 3:
                 character_id = '{}-{}'.format(avaterinfo['avatarId'], avaterinfo['skillDepotId'])
@@ -1216,14 +1205,14 @@ class Artifacter(object):
         artifacts = json.loads(json.dumps(artifacts, ensure_ascii=False, default=self.decimal_float))
         with self.ArtifactFont() as Font:  # フォントファイルを一時フォルダへ展開後、フォントファイルを読み込み
             artifact_font = lambda size: ImageFont.truetype(Font, size)
-            BaseImage = Image.open(BytesIO(self.artifact_base_image(character_element))).convert('RGBA')  # ベース画像の読み込み
+            BaseImage = Image.open(io.BytesIO(self.artifact_base_image(character_element))).convert('RGBA')  # ベース画像の読み込み
             # キャラクター画像の編集
             if character_icon == 'UI_Gacha_AvatarImg_PlayerBoy.png':
-                character_image = Image.open(BytesIO(self.artifact_assets(character_icon))).convert('RGBA')
+                character_image = Image.open(io.BytesIO(self.artifact_assets(character_icon))).convert('RGBA')
             elif character_icon == 'UI_Gacha_AvatarImg_PlayerGirl.png':
-                character_image = Image.open(BytesIO(self.artifact_assets(character_icon))).convert('RGBA')
+                character_image = Image.open(io.BytesIO(self.artifact_assets(character_icon))).convert('RGBA')
             else:
-                character_image = Image.open(BytesIO(urllib.request.urlopen(
+                character_image = Image.open(io.BytesIO(urllib.request.urlopen(
                     urllib.request.Request('https://enka.network/ui/{}'.format(character_icon),
                                            headers={'User-Agent': UsrAgn})).read())).convert(
                     'RGBA')  # キャラクター画像をEnkaNetworkから取得
@@ -1238,7 +1227,7 @@ class Artifacter(object):
             character_avatar_image_mask = character_image.copy()
             character_paste = Image.new('RGBA', BaseImage.size, (255, 255, 255, 0))  # キャラクター画像を編集するための土台作り
             character_paste.paste(character_image, (33, 12), mask=character_avatar_image_mask)  # キャラクター画像を土台と合成
-            character_status_blur = Image.open(BytesIO(self.artifact_assets('CharacterBlur'))).convert('RGBA')  # ぼかし画像
+            character_status_blur = Image.open(io.BytesIO(self.artifact_assets('CharacterBlur'))).convert('RGBA')  # ぼかし画像
             character_status_blur_paste = Image.new('RGBA', BaseImage.size, (255, 255, 255, 0))
             character_status_blur.putalpha(56)  # 不透明度を設定
             character_status_blur_paste.paste(character_status_blur, (56, 105))  # キャラクターのステータスの背景にぼかしを入れる
@@ -1246,7 +1235,7 @@ class Artifacter(object):
                                                     character_status_blur_paste)  # キャラクターの下に表示される好感度などのステータスの背景をブラーをかけてキャラクター画像と合成
             BaseImage = Image.alpha_composite(BaseImage, character_paste)  # ベース画像とキャラクター画像を合成
             # 武器画像の編集
-            weapon_image = Image.open(BytesIO(urllib.request.urlopen(
+            weapon_image = Image.open(io.BytesIO(urllib.request.urlopen(
                 urllib.request.Request('https://enka.network/ui/{}'.format(weapon_icon),
                                        headers={'User-Agent': UsrAgn})).read())).convert('RGBA').resize(
                 (128, 128))  # EnkaNetworkから武器の画像データを取得
@@ -1257,23 +1246,23 @@ class Artifacter(object):
             # 武器のレアリティ画像の編集
             try:  # 武器のレアリティ画像をRBGAに変換して読み込む
                 weapon_rarelity_image = Image.open(
-                    BytesIO(self.artifact_rarelity('{}'.format(weapon_rarelity)))).convert('RGBA')
+                    io.BytesIO(self.artifact_rarelity('{}'.format(weapon_rarelity)))).convert('RGBA')
             except:  # もし、エラーが出るなら武器のレアリティ画像をそのまま読み込む
-                weapon_rarelity_image = Image.open(BytesIO(self.artifact_rarelity('{}'.format(weapon_rarelity))))
+                weapon_rarelity_image = Image.open(io.BytesIO(self.artifact_rarelity('{}'.format(weapon_rarelity))))
             weapon_rarelity_image = weapon_rarelity_image.resize(
                 (int(weapon_rarelity_image.width * 0.97), int(weapon_rarelity_image.height * 0.97)))
             weapon_rarelity_image_paste = Image.new('RGBA', BaseImage.size, (255, 255, 255, 0))  # 武器のレアリティ土台を作成
             weapon_rarelity_image_mask = weapon_rarelity_image.copy()  # 武器のレアリティ画像からマスクを作成
             weapon_rarelity_image_paste.paste(weapon_rarelity_image, (1182, 182), mask=weapon_rarelity_image_mask)  # 変更
             BaseImage = Image.alpha_composite(BaseImage, weapon_rarelity_image_paste)  # ベース画像に武器のレアリティ画像を貼り付け
-            character_talent_base = Image.open(BytesIO(self.artifact_assets('TalentBack')))  # 天賦のベース画像
+            character_talent_base = Image.open(io.BytesIO(self.artifact_assets('TalentBack')))  # 天賦のベース画像
             character_talent_paste = Image.new('RGBA', BaseImage.size, (255, 255, 255, 0))  # 天賦のベース画像を合成するためのベース画像
             character_talent_base = character_talent_base.resize(
                 (int(character_talent_base.width / 1.5), int(character_talent_base.height / 1.5)))  # 天賦のベース画像をリサイズ
             for i, t in enumerate(character_skill_icons):  # 天賦ベース画像とスキルアイコンとの合成
                 _talent_paste = Image.new('RGBA', character_talent_base.size,
                                           (255, 255, 255, 0))  # 天賦のベース画像に合わせてベース画像を作成
-                _talent = Image.open(BytesIO(urllib.request.urlopen(
+                _talent = Image.open(io.BytesIO(urllib.request.urlopen(
                     urllib.request.Request('https://enka.network/ui/{}'.format(t),
                                            headers={'User-Agent': UsrAgn})).read())).resize((50, 50)).convert(
                     'RGBA')  # EnkaNetworkから各種天賦画像を取得
@@ -1283,10 +1272,10 @@ class Artifacter(object):
                 _talent_object = Image.alpha_composite(character_talent_base, _talent_paste)  # 天賦画像と新規天賦ベース画像を合成
                 character_talent_paste.paste(_talent_object, (1005, 10 + i * 86))  # 天賦画像を指定の位置で合成
             BaseImage = Image.alpha_composite(BaseImage, character_talent_paste)
-            character_constellations_base = Image.open(BytesIO(self.artifact_constellation(character_element))).resize(
+            character_constellations_base = Image.open(io.BytesIO(self.artifact_constellation(character_element))).resize(
                 (90, 90)).convert('RGBA')  # キャラクターの凸数のベース画像
             character_constellations_lock_base = Image.open(
-                BytesIO(self.artifact_constellation('{}LOCK'.format(character_element)))).convert(
+                io.BytesIO(self.artifact_constellation('{}LOCK'.format(character_element)))).convert(
                 'RGBA')  # キャラクターの凸数のロックされた画像のベース
             character_constellations_lock_base_mask = character_constellations_lock_base.copy()  # ロックされた凸数のマスクを作成
             character_constellations_paste = Image.new('RGBA', BaseImage.size, (255, 255, 255, 0))  # 凸数の新しいベース画像を作成
@@ -1295,7 +1284,7 @@ class Artifacter(object):
                     character_constellations_paste.paste(character_constellations_lock_base, (1016, 235 + (c + 1) * 93),
                                                          mask=character_constellations_lock_base_mask)  # キャラクターのロックされた凸数をベースへ貼り付け
                 else:  # キャラクターの凸数が「c」より大きいなら以下を実行
-                    _character_const = Image.open(BytesIO(urllib.request.urlopen(
+                    _character_const = Image.open(io.BytesIO(urllib.request.urlopen(
                         urllib.request.Request('https://enka.network/ui/{}'.format(t),
                                                headers={'User-Agent': UsrAgn})).read())).convert('RGBA').resize(
                         (45, 45))  # キャラクターの凸数に応じて凸の画像を取得
@@ -1320,7 +1309,7 @@ class Artifacter(object):
             DR.rounded_rectangle(
                 (60 + character_levellength + 5, 74, 77 + character_levellength + character_friendShiplength, 102),
                 radius=0, outline=None, width=0)  # 好感度をレベルの文の長さに間隔を開けてから記入
-            character_friendShipicon = Image.open(BytesIO(self.artifact_assets('Love'))).convert(
+            character_friendShipicon = Image.open(io.BytesIO(self.artifact_assets('Love'))).convert(
                 'RGBA')  # キャラクターの好感度アイコンを読み込み
             character_friendShipicon = character_friendShipicon.resize(
                 (int(character_friendShipicon.width * (24 / character_friendShipicon.height)), 24))  # 好感度アイコンをリサイズ
@@ -1364,7 +1353,7 @@ class Artifacter(object):
                 except:
                     i = 7
                     DR.text((1261, 713), k, font=artifact_font(40))
-                    ElementOpIcon = Image.open(BytesIO(self.artifact_emotes(k))).resize((40, 40))
+                    ElementOpIcon = Image.open(io.BytesIO(self.artifact_emotes(k))).resize((40, 40))
                     ElementOpIconPaste = Image.new('RGBA', BaseImage.size, (255, 255, 255, 0))
                     ElementOpIconPaste.paste(ElementOpIcon, (1199, 713))
                     BaseImage = Image.alpha_composite(BaseImage, ElementOpIconPaste)
@@ -1389,13 +1378,13 @@ class Artifacter(object):
             weapon_length = DR.textlength(f'Lv.{weapon_level}', font=artifact_font(24))
             DR.rounded_rectangle((1582, 80, 1582 + weapon_length + 4, 108), radius=0, outline=None, width=0)
             DR.text((1390, 82), f'Lv.{weapon_level}', font=artifact_font(24))
-            w_baseAttack = Image.open(BytesIO(self.artifact_emotes('基礎攻撃力'))).convert('RGBA').resize((23, 23))
+            w_baseAttack = Image.open(io.BytesIO(self.artifact_emotes('基礎攻撃力'))).convert('RGBA').resize((23, 23))
             w_baseAttack_mask = w_baseAttack.copy()
             BaseImage.paste(w_baseAttack, (1395, 120), mask=w_baseAttack_mask)
             DR.text((1420, 118), '基礎攻撃力  {}'.format(weapon_attack_rate), font=artifact_font(23))  # 武器の基礎攻撃力を記載
             OptionMap = {'攻撃パーセンテージ': '攻撃%', '防御パーセンテージ': '防御%', '元素チャージ効率': '元チャ効率', 'HPパーセンテージ': 'HP%'}
             if weapon_sub_name != None:  # 武器のサブ名が有効なら以下を実行
-                w_baseAttack = Image.open(BytesIO(self.artifact_emotes(weapon_sub_name))).convert('RGBA').resize(
+                w_baseAttack = Image.open(io.BytesIO(self.artifact_emotes(weapon_sub_name))).convert('RGBA').resize(
                     (23, 23))
                 w_baseAttack_mask = w_baseAttack.copy()
                 BaseImage.paste(w_baseAttack, (1395, 155), mask=w_baseAttack_mask)
@@ -1418,13 +1407,13 @@ class Artifacter(object):
                     font=artifact_font(24))  # 聖遺物を評価する方式を表記
             # トータルスコアのランク決め
             if float(artifacts_score["total"]) >= 220:
-                scoreEv = Image.open(BytesIO(self.artifact_grades('SS')))
+                scoreEv = Image.open(io.BytesIO(self.artifact_grades('SS')))
             elif float(artifacts_score["total"]) >= 200:
-                scoreEv = Image.open(BytesIO(self.artifact_grades('S')))
+                scoreEv = Image.open(io.BytesIO(self.artifact_grades('S')))
             elif float(artifacts_score["total"]) >= 180:
-                scoreEv = Image.open(BytesIO(self.artifact_grades('A')))
+                scoreEv = Image.open(io.BytesIO(self.artifact_grades('A')))
             else:
-                scoreEv = Image.open(BytesIO(self.artifact_grades('B')))
+                scoreEv = Image.open(io.BytesIO(self.artifact_grades('B')))
             scoreEv = scoreEv.convert('RGBA').resize((scoreEv.width // 8, scoreEv.height // 8))
             evmask = scoreEv.copy()
             BaseImage.paste(scoreEv, (850, 708), mask=evmask)
@@ -1437,7 +1426,7 @@ class Artifacter(object):
                 else:
                     ArtifactType.append(artifact_details['type'])
                     artifact_preview_paste = Image.new('RGBA', BaseImage.size, (255, 255, 255, 0))  # 聖遺物の画像の土台を作成
-                    artifact_preview = Image.open(BytesIO(urllib.request.urlopen(
+                    artifact_preview = Image.open(io.BytesIO(urllib.request.urlopen(
                         urllib.request.Request('https://enka.network/ui/{}'.format(artifact_icons),
                                                headers={'User-Agent': UsrAgn})).read())).convert('RGBA').resize(
                         (256, 256))  # 聖遺物の画像をEnakNetworkから取得
@@ -1479,7 +1468,7 @@ class Artifacter(object):
                     except:
                         DR.text((375 + i * 373 - int(MainOptionLen), 941), MainOption,
                                 font=artifact_font(29))  # メインオプションを書き込み
-                    MainOption_icon = Image.open(BytesIO(self.artifact_emotes(MainOption))).convert('RGBA').resize(
+                    MainOption_icon = Image.open(io.BytesIO(self.artifact_emotes(MainOption))).convert('RGBA').resize(
                         (35, 35))  # メインオプションのアイコンを取得
                     MainOption_icon_mask = MainOption_icon.copy()  # メインオプションのアイコンのマスクを作成
                     BaseImage.paste(MainOption_icon, (335 + i * 373 - int(MainOptionLen), 941),
@@ -1527,7 +1516,7 @@ class Artifacter(object):
                                         OptionMap[artifact_suboption] or artifact_suboption, font=artifact_font(25))
                             except:
                                 DR.text((79 + 373 * i, 1109 + 50 * a), artifact_suboption, font=artifact_font(25))
-                        artifact_suboption_icon = Image.open(BytesIO(self.artifact_emotes(artifact_suboption))).convert(
+                        artifact_suboption_icon = Image.open(io.BytesIO(self.artifact_emotes(artifact_suboption))).convert(
                             'RGBA').resize((30, 30))
                         artifact_suboption_icon_mask = artifact_suboption_icon.copy()
                         BaseImage.paste(artifact_suboption_icon, (44 + 373 * i, 1109 + 50 * a),
@@ -1560,13 +1549,13 @@ class Artifacter(object):
                               'wing': {'SS': 50, 'S': 45, 'A': 40}, 'clock': {'SS': 45, 'S': 40, 'A': 35},
                               'cup': {'SS': 45, 'S': 40, 'A': 37}, 'crown': {'SS': 40, 'S': 35, 'A': 30}}
                     if artifactsScore >= PRefer[part]['SS']:
-                        artifact_score_image = Image.open(BytesIO(self.artifact_grades('SS')))
+                        artifact_score_image = Image.open(io.BytesIO(self.artifact_grades('SS')))
                     elif artifactsScore >= PRefer[part]['S']:
-                        artifact_score_image = Image.open(BytesIO(self.artifact_grades('S')))
+                        artifact_score_image = Image.open(io.BytesIO(self.artifact_grades('S')))
                     elif artifactsScore >= PRefer[part]['A']:
-                        artifact_score_image = Image.open(BytesIO(self.artifact_grades('A')))
+                        artifact_score_image = Image.open(io.BytesIO(self.artifact_grades('A')))
                     else:
-                        artifact_score_image = Image.open(BytesIO(self.artifact_grades('B')))
+                        artifact_score_image = Image.open(io.BytesIO(self.artifact_grades('B')))
                     artifact_score_image = artifact_score_image.convert('RGBA').resize(
                         (artifact_score_image.width // 11, artifact_score_image.height // 11))
                     artifact_score_image_mask = artifact_score_image.copy()
@@ -1581,9 +1570,8 @@ class Artifacter(object):
                     DR.text((1605, 826), '{}'.format(q), font=artifact_font(30))
             os.makedirs(os.path.join(os.getcwd(), 'ArtifacterImageOutput'), exist_ok=True)
             BaseImage.save(os.path.join(os.getcwd(), 'ArtifacterImageOutput', 'buildcard.png'))
-            concurrent.futures.ThreadPoolExecutor().submit(console.quicklook,
-                                                           os.path.join(os.getcwd(), 'ArtifacterImageOutput',
-                                                                        'buildcard.png'))
+            import console # will delete
+            concurrent.futures.ThreadPoolExecutor().submit(console.quicklook, os.path.join(os.getcwd(), 'ArtifacterImageOutput', 'buildcard.png')) # will delete
 
     def main(self):
         if len(self.uid) == 9:
@@ -1626,7 +1614,11 @@ class Artifacter(object):
                 AvatarList[0:] = avatar_lists
 
     def start_buildcrate(self, data, score_state):
-        self.create_buildcard(data, score_state)
+        try:
+            self.create_buildcard(data, score_state)
+        except Exception as E:
+            with open('errorlog.txt', 'w', encoding='utf-8') as ff:
+                ff.write(str(E))
 
 
 def main(_):
