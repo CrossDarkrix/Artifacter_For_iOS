@@ -1614,11 +1614,7 @@ class Artifacter(object):
                 AvatarList[0:] = avatar_lists
 
     def start_buildcrate(self, data, score_state):
-        try:
-            self.create_buildcard(data, score_state)
-        except Exception as E:
-            with open('errorlog.txt', 'w', encoding='utf-8') as ff:
-                ff.write(str(E))
+        self.create_buildcard(data, score_state)
 
 
 def main(_):
