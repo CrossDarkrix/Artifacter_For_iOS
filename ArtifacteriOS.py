@@ -1034,70 +1034,49 @@ class Artifacter(object):
 
     def create_buildcard(self, avaterinfo, score_state):
         # ここからキャラクターデータ
-        try:
-            if len('{}'.format(avaterinfo['skillDepotId'])) == 3:
-                character_id = '{}-{}'.format(avaterinfo['avatarId'], avaterinfo['skillDepotId'])
-                character_skill_icons = [
-                    '{}.png'.format(list(self.characters_json[character_id]['Skills'].values())[2]),
-                    '{}.png'.format(list(self.characters_json[character_id]['Skills'].values())[0]),
-                    '{}.png'.format(list(self.characters_json[character_id]['Skills'].values())[1])]  # キャラクター天賦画像
+        try: # キャラクタースキルセットIDを判別。
+            if len('{}'.format(avaterinfo['skillDepotId'])) == 3: # キャラクタースキルセットIDが３なら以下を実行
+                character_id = '{}-{}'.format(avaterinfo['avatarId'], avaterinfo['skillDepotId']) # キャラクタースキルセットIDは[avatarid]-[skillDepotId]という形式で取得できる
+                character_skill_icons = ['{}.png'.format(list(self.characters_json[character_id]['Skills'].values())[2]), '{}.png'.format(list(self.characters_json[character_id]['Skills'].values())[0]), '{}.png'.format(list(self.characters_json[character_id]['Skills'].values())[1])]  # キャラクター天賦画像(画像上半分の真ん中にある細長い長方形の上半分)
             else:
                 character_id = '{}'.format(avaterinfo['avatarId'])
-                character_skill_icons = ['{}.png'.format(skill) for skill in
-                                         self.characters_json[character_id]['Skills'].values()]  # キャラクター天賦画像
+                character_skill_icons = ['{}.png'.format(skill) for skill in self.characters_json[character_id]['Skills'].values()]  # キャラクター天賦画像(画像上半分の真ん中にある細長い長方形上半分)
         except:
             character_id = '{}'.format(avaterinfo['avatarId'])
-            character_skill_icons = ['{}.png'.format(skill) for skill in
-                                     self.characters_json[character_id]['Skills'].values()]  # キャラクター天賦画像
-        element_locale = {'Fire': '炎', 'Water': '水', 'Electric': '雷', 'Ice': '氷', 'Wind': '風', 'Rock': '岩',
-                          'Grass': '草'}
-        character_element = element_locale[self.characters_json[character_id]['Element']]  # 元素
+            character_skill_icons = ['{}.png'.format(skill) for skill in self.characters_json[character_id]['Skills'].values()]  # キャラクター天賦画像(画像上半分の真ん中にある細長い長方形の上半分)
+        element_locale = {'Fire': '炎', 'Water': '水', 'Electric': '雷', 'Ice': '氷', 'Wind': '風', 'Rock': '岩', 'Grass': '草'} # 各元素の読み方を決める
+        character_element = element_locale[self.characters_json[character_id]['Element']] # 作成するキャラクターの元素の読み方を決める
         character_name = self.locale_jp['{}'.format(self.characters_json[character_id]['NameTextMapHash'])]  # キャラクター名
         try:
-            character_icon = '{}.png'.format(
-                self.characters_json[character_id]['Costumes']['{}'.format(avaterinfo['costumeId'])][
-                    'sideIconName'].replace('UI_AvatarIcon_Side_', 'UI_Costume_'))  # キャラクターがコスチュームを付けていた場合の対応
+            character_icon = '{}.png'.format(self.characters_json[character_id]['Costumes']['{}'.format(avaterinfo['costumeId'])]['sideIconName'].replace('UI_AvatarIcon_Side_', 'UI_Costume_'))  # キャラクターがコスチュームを付けていた場合の対応
         except:
-            character_icon = '{}.png'.format(
-                '{}'.format(self.characters_json[character_id]['SideIconName']).replace('UI_AvatarIcon_Side_',
-                                                                                        'UI_Gacha_AvatarImg_'))  # キャラクターの画像
+            character_icon = '{}.png'.format('{}'.format(self.characters_json[character_id]['SideIconName']).replace('UI_AvatarIcon_Side_',　'UI_Gacha_AvatarImg_'))  # キャラクターの画像(UI_AvatarIcon_Side_をUI_Gacha_AvatarImg_に変更し、横顔画像から正面の顔の画像を取得)
         try:
-            character_const = len(avaterinfo['talentIdList']) - 1  # キャラクター凸数
+            character_const = len(avaterinfo['talentIdList']) - 1  # キャラクター凸数(画像上半分の真ん中にある細長い長方形の下半分の鍵アイコンが入ってる部分)
         except:
             character_const = -1
-        character_const_icons = ['{}.png'.format(cicon) for cicon in
-                                 self.characters_json[character_id]['Consts']]  # キャラクター凸画像
+        character_const_icons = ['{}.png'.format(cicon) for cicon in self.characters_json[character_id]['Consts']]  # キャラクター凸画像(画像上半分の真ん中にある細長い長方形の下半分の鍵アイコンが入ってる部分のアイコン画像)
         character_level = '{}'.format(avaterinfo['propMap']['4001']['val'])  # キャラクターのレベル
         character_fav_rate = '{}'.format(avaterinfo['fetterInfo']['expLevel'])  # キャラクターの好感度
-        character_hp = int(
-            Decimal(avaterinfo['fightPropMap']['2000']).quantize(Decimal('0'), rounding=ROUND_HALF_UP))  # キャラクターのHP
-        character_attack_rate = int(
-            Decimal(avaterinfo['fightPropMap']['2001']).quantize(Decimal('0'), rounding=ROUND_HALF_UP))  # キャラクターの攻撃力
-        character_defence_rate = int(
-            Decimal(avaterinfo['fightPropMap']['2002']).quantize(Decimal('0'), rounding=ROUND_HALF_UP))  # キャラクターの防御力
-        character_element_mastery = int(
-            Decimal(avaterinfo['fightPropMap']['28']).quantize(Decimal('0'), rounding=ROUND_HALF_UP))  # キャラクターの熟知
-        character_charge_efficiency = Decimal(avaterinfo['fightPropMap']['23'] * 100).quantize(Decimal('0.1'),
-                                                                                               rounding=ROUND_HALF_UP)  # キャラクターの元素チャージ効率
-        character_critical_rate = Decimal(avaterinfo['fightPropMap']['20'] * 100).quantize(Decimal('0.1'),
-                                                                                           rounding=ROUND_HALF_UP)  # キャラクターの会心率
-        character_critical_damage_rate = Decimal(avaterinfo['fightPropMap']['22'] * 100).quantize(Decimal('0.1'),
-                                                                                                  rounding=ROUND_HALF_UP)
-        character_element_buff_json = {'30': '物理ダメージ', '40': '炎元素ダメージ', '41': '雷元素ダメージ', '42': '水元素ダメージ',
-                                       '43': '草元素ダメージ', '44': '風元素ダメージ', '45': '岩元素ダメージ', '46': '氷元素ダメージ'}
-        character_element_buff = list(character_element_buff_json.keys())
+        character_hp = int(Decimal(avaterinfo['fightPropMap']['2000']).quantize(Decimal('0'), rounding=ROUND_HALF_UP))  # キャラクターのHP
+        character_attack_rate = int(Decimal(avaterinfo['fightPropMap']['2001']).quantize(Decimal('0'), rounding=ROUND_HALF_UP))  # キャラクターの攻撃力
+        character_defence_rate = int(Decimal(avaterinfo['fightPropMap']['2002']).quantize(Decimal('0'), rounding=ROUND_HALF_UP))  # キャラクターの防御力
+        character_element_mastery = int(Decimal(avaterinfo['fightPropMap']['28']).quantize(Decimal('0'), rounding=ROUND_HALF_UP))  # キャラクターの熟知
+        character_charge_efficiency = Decimal(avaterinfo['fightPropMap']['23'] * 100).quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)  # キャラクターの元素チャージ効率
+        character_critical_rate = Decimal(avaterinfo['fightPropMap']['20'] * 100).quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)  # キャラクターの会心率
+        character_critical_damage_rate = Decimal(avaterinfo['fightPropMap']['22'] * 100).quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)
+        character_element_buff_json = {'30': '物理ダメージ', '40': '炎元素ダメージ', '41': '雷元素ダメージ', '42': '水元素ダメージ', '43': '草元素ダメージ', '44': '風元素ダメージ', '45': '岩元素ダメージ', '46': '氷元素ダメージ'} # キャラクターの元素ダメージの種類
+        character_element_buff = list(character_element_buff_json.keys()) # character_element_buff_jsonのkeyをリスト化
         character_element_max_buff_key = '30'
         character_element_max_value = 0
-        for sk in character_element_buff:
-            if avaterinfo['fightPropMap'][sk] > character_element_max_value:
-                character_element_max_value = avaterinfo['fightPropMap'][sk]
-                character_element_max_buff_key = sk
-        character_element_buff_name = '{}'.format(character_element_buff_json[character_element_max_buff_key])
-        character_element_buff_value = '{}'.format(
-            Decimal(avaterinfo['fightPropMap'][character_element_max_buff_key] * 100).quantize(Decimal('0.1'),
-                                                                                               rounding=ROUND_HALF_UP))
-        if 'proudSkillExtraLevelMap' in avaterinfo:
-            try:
+        for sk in character_element_buff: # キャラクターの元素ダメージを決める
+            if avaterinfo['fightPropMap'][sk] > character_element_max_value: # キャラクターの元素番号が30よりおおきいか
+                character_element_max_value = avaterinfo['fightPropMap'][sk] # 大きいなら最大値はキャラクターの元素番号に設定
+                character_element_max_buff_key = sk # 大きいならKeyは現在のskに設定
+        character_element_buff_name = '{}'.format(character_element_buff_json[character_element_max_buff_key]) # 元素ダメージの読み方を設定
+        character_element_buff_value = '{}'.format(Decimal(avaterinfo['fightPropMap'][character_element_max_buff_key] * 100).quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)) # 元素ダメージの値を設定
+        if 'proudSkillExtraLevelMap' in avaterinfo: # 凸数の開放具合を設定
+            try: # エラーなら鍵アイコンにする
                 PMap = self.characters_json['{}'.format(character_id)]['ProudMap']
                 for sk in list(map(int, avaterinfo['skillLevelMap'].keys())):
                     try:
@@ -1108,18 +1087,12 @@ class Artifacter(object):
                         pass
             except:
                 pass
-        character_talent_normal = '{}'.format(avaterinfo['skillLevelMap']['{}'.format(
-            self.characters_json['{}'.format(character_id)]['SkillOrder'][0])])  # キャラクター天賦: 通常攻撃
-        character_talent_skill = '{}'.format(avaterinfo['skillLevelMap']['{}'.format(
-            self.characters_json['{}'.format(character_id)]['SkillOrder'][1])])  # キャラクター天賦: スキル攻撃
-        character_talent_explosion = '{}'.format(avaterinfo['skillLevelMap']['{}'.format(
-            self.characters_json['{}'.format(character_id)]['SkillOrder'][2])])  # キャラクター天賦: 爆発攻撃
-        character_base_hp = int(
-            Decimal(avaterinfo['fightPropMap']['1']).quantize(Decimal('0'), rounding=ROUND_HALF_UP))  # キャラクター基礎HP
-        character_base_attack = int(
-            Decimal(avaterinfo['fightPropMap']['4']).quantize(Decimal('0'), rounding=ROUND_HALF_UP))  # キャラクター基礎攻撃力
-        character_base_defence = int(
-            Decimal(avaterinfo['fightPropMap']['7']).quantize(Decimal('0'), rounding=ROUND_HALF_UP))  # キャラクター基礎防御力
+        character_talent_normal = '{}'.format(avaterinfo['skillLevelMap']['{}'.format(self.characters_json['{}'.format(character_id)]['SkillOrder'][0])])  # キャラクター天賦: 通常攻撃
+        character_talent_skill = '{}'.format(avaterinfo['skillLevelMap']['{}'.format(self.characters_json['{}'.format(character_id)]['SkillOrder'][1])])  # キャラクター天賦: スキル攻撃
+        character_talent_explosion = '{}'.format(avaterinfo['skillLevelMap']['{}'.format(self.characters_json['{}'.format(character_id)]['SkillOrder'][2])])  # キャラクター天賦: 爆発攻撃
+        character_base_hp = int(Decimal(avaterinfo['fightPropMap']['1']).quantize(Decimal('0'), rounding=ROUND_HALF_UP))  # キャラクター基礎HP
+        character_base_attack = int(Decimal(avaterinfo['fightPropMap']['4']).quantize(Decimal('0'), rounding=ROUND_HALF_UP))  # キャラクター基礎攻撃力
+        character_base_defence = int(Decimal(avaterinfo['fightPropMap']['7']).quantize(Decimal('0'), rounding=ROUND_HALF_UP))  # キャラクター基礎防御力
         # ここまでキャラクターデータ
         # ここから武器データ
         weapon = list(filter(lambda item: item.get('weapon'), avaterinfo['equipList']))[0]  # 武器のデータ
@@ -1130,43 +1103,29 @@ class Artifacter(object):
         except:
             weapon_constellations = 2
         weapon_rarelity = weapon['flat']['rankLevel']  # 武器のレアリティ
-        weapon_attack_rate = \
-        list(filter(lambda item: item['appendPropId'] == 'FIGHT_PROP_BASE_ATTACK', weapon['flat']['weaponStats']))[0][
-            'statValue']  # 武器の基礎攻撃力
+        weapon_attack_rate = list(filter(lambda item: item['appendPropId'] == 'FIGHT_PROP_BASE_ATTACK', weapon['flat']['weaponStats']))[0]['statValue']  # 武器の基礎攻撃力
         try:
-            weapon_sub_name = self.locale_jp[list(
-                filter(lambda item: item['appendPropId'] != 'FIGHT_PROP_BASE_ATTACK', weapon['flat']['weaponStats']))[
-                0]['appendPropId']]
-        except:
+            weapon_sub_name = self.locale_jp[list(filter(lambda item: item['appendPropId'] != 'FIGHT_PROP_BASE_ATTACK', weapon['flat']['weaponStats']))[0]['appendPropId']] # 武器の名前を設定
+        except: # エラーが出たならなしに設定
             weapon_sub_name = None
         try:
-            weapon_sub_value = \
-            list(filter(lambda item: item['appendPropId'] != 'FIGHT_PROP_BASE_ATTACK', weapon['flat']['weaponStats']))[
-                0]['statValue']
+            weapon_sub_value = list(filter(lambda item: item['appendPropId'] != 'FIGHT_PROP_BASE_ATTACK', weapon['flat']['weaponStats']))[0]['statValue'] # 武器のプロパティを設定
         except:
             weapon_sub_value = '1'
-        weapon_icon = '{}.png'.format(weapon['flat']['icon'])
+        weapon_icon = '{}.png'.format(weapon['flat']['icon']) # 武器アイコンを設定
         # ここまで武器データ
         # ここから聖遺物データ
-        artifact_state = {'HP': 'HPパーセンテージ', '攻撃': '攻撃パーセンテージ', '防御': '防御パーセンテージ', 'チャージ': '元素チャージ効率',
-                          '元素熟知': '元素熟知'}
+        artifact_state = {'HP': 'HPパーセンテージ', '攻撃': '攻撃パーセンテージ', '防御': '防御パーセンテージ', 'チャージ': '元素チャージ効率', '元素熟知': '元素熟知'} # 聖遺物のメインオプションを設定
         artifact_total_score = 0
-        artifacts_score = {'total': 0.0, 'state': score_state, 'flower': 0.0, 'wing': 0.0, 'clock': 0.0, 'cup': 0.0,
-                           'crown': 0.0}
+        artifacts_score = {'total': 0.0, 'state': score_state, 'flower': 0.0, 'wing': 0.0, 'clock': 0.0, 'cup': 0.0, 'crown': 0.0} # 各聖遺物のスコアを設定
         artifact_list = list(filter(lambda item: item.get('reliquary'), avaterinfo['equipList']))
-        artifact_type_name = {'EQUIP_BRACER': 'flower', 'EQUIP_NECKLACE': 'wing', 'EQUIP_SHOES': 'clock',
-                              'EQUIP_RING': 'cup', 'EQUIP_DRESS': 'crown'}
+        artifact_type_name = {'EQUIP_BRACER': 'flower', 'EQUIP_NECKLACE': 'wing', 'EQUIP_SHOES': 'clock', 'EQUIP_RING': 'cup', 'EQUIP_DRESS': 'crown'} # JSONの値の呼び方を設定
         artifacts = {
-            'flower': {'type': '', 'icon': '', 'level': 1, 'rarelity': 1, 'mainoption': {'optionName': '', 'value': 0},
-                       'suboption': []},
-            'wing': {'type': '', 'icon': '', 'level': 1, 'rarelity': 1, 'mainoption': {'optionName': '', 'value': 0},
-                     'suboption': []},
-            'clock': {'type': '', 'icon': '', 'level': 1, 'rarelity': 1, 'mainoption': {'optionName': '', 'value': 0},
-                      'suboption': []},
-            'cup': {'type': '', 'icon': '', 'level': 1, 'rarelity': 1, 'mainoption': {'optionName': '', 'value': 0},
-                    'suboption': []},
-            'crown': {'type': '', 'icon': '', 'level': 1, 'rarelity': 1, 'mainoption': {'optionName': '', 'value': 0},
-                      'suboption': []}}
+            'flower': {'type': '', 'icon': '', 'level': 1, 'rarelity': 1, 'mainoption': {'optionName': '', 'value': 0}, 'suboption': []},
+            'wing': {'type': '', 'icon': '', 'level': 1, 'rarelity': 1, 'mainoption': {'optionName': '', 'value': 0}, 'suboption': []},
+            'clock': {'type': '', 'icon': '', 'level': 1, 'rarelity': 1, 'mainoption': {'optionName': '', 'value': 0}, 'suboption': []},
+            'cup': {'type': '', 'icon': '', 'level': 1, 'rarelity': 1, 'mainoption': {'optionName': '', 'value': 0}, 'suboption': []},
+            'crown': {'type': '', 'icon': '', 'level': 1, 'rarelity': 1, 'mainoption': {'optionName': '', 'value': 0}, 'suboption': []}} # 各聖遺物のjsonをセルフ作成
         for _Artifact in artifact_list:
             # 聖遺物のメインオプションを設定
             try:
@@ -1178,8 +1137,7 @@ class Artifacter(object):
                 artifact['icon'] = '{}.png'.format(_Artifact['flat']['icon'])  # 聖遺物のアイコン名
                 artifact['level'] = _Artifact['reliquary']['level'] - 1  # 聖遺物のレベル
                 artifact['rarelity'] = _Artifact['flat']['rankLevel']
-                artifact['mainoption']['optionName'] = self.locale_jp[
-                    _Artifact['flat']['reliquaryMainstat']['mainPropId']]
+                artifact['mainoption']['optionName'] = self.locale_jp[_Artifact['flat']['reliquaryMainstat']['mainPropId']]
                 artifact['mainoption']['value'] = _Artifact['flat']['reliquaryMainstat']['statValue']
                 # 聖遺物のサブオプションを設定
                 artifactscore = 0
@@ -1574,10 +1532,10 @@ class Artifacter(object):
             concurrent.futures.ThreadPoolExecutor().submit(console.quicklook, os.path.join(os.getcwd(), 'ArtifacterImageOutput', 'buildcard.png')) # will delete
 
     def main(self):
-        if len(self.uid) == 9:
-            player_info = self.playerinfo()
+        if len(self.uid) == 9: # UIDが９桁なら
+            player_info = self.playerinfo() # プレイヤー情報を取得
             if 'showAvatarInfoList' in player_info:
-                try:
+                try: # アイコンデータを取得。エラーなら違う方式で読み込み
                     v['IconView'].image = ui.Image.from_data(urllib.request.urlopen(urllib.request.Request(
                         'https://enka.network/ui/{}.png'.format(
                             self.character_pfps_json()['{}'.format(self.playerinfo()['profilePicture']['id'])][
@@ -1595,7 +1553,7 @@ class Artifacter(object):
                         del v['characterList'].data_source.items[0]
                 except:
                     pass
-                if not ''.join(v['characterList'].data_source.items) == '':
+                if not ''.join(v['characterList'].data_source.items) == '': # キャラクターデータが既にあるなら削除
                     try:
                         CL = [0]
                         for _i in CL:
@@ -1609,8 +1567,7 @@ class Artifacter(object):
                     except:
                         pass
                 avatar_lists = player_info['showAvatarInfoList']
-                v['characterList'].data_source.items = ['{} \tLv{}'.format(avatar['name'], avatar['level']) for
-                                                        index, avatar in enumerate(avatar_lists)]
+                v['characterList'].data_source.items = ['{} \tLv{}'.format(avatar['name'], avatar['level']) for index, avatar in enumerate(avatar_lists)] # キャラクターデータリストをリストに反映
                 AvatarList[0:] = avatar_lists
 
     def start_buildcrate(self, data, score_state):
